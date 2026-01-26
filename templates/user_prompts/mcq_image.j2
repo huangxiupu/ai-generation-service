@@ -1,0 +1,14 @@
+Context:
+- Grade Level: {{ grade_level }}
+- Topic/Theme: {{ topic }}
+- Keywords: {{ keywords | join(', ') }}
+
+Task:
+Generate a multiple-choice question where the user must identify an image.
+
+Constraints:
+1. Difficulty: {{ difficulty }}
+2. The question should ask to identify a word or concept represented by an image.
+3. Provide distinct visual descriptions for the options (which will be used to generate images).
+4. Output JSON strictly matching this schema:
+{{ schema_json }}

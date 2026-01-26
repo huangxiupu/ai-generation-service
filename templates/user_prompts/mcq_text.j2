@@ -1,0 +1,17 @@
+Context:
+- Grade Level: {{ grade_level }}
+- Topic/Theme: {{ topic }}
+- Keywords: {{ keywords | join(', ') }}
+{% if additional_context %}
+- Additional Context: {{ additional_context }}
+{% endif %}
+
+Task:
+Generate a multiple-choice question (Text-based).
+
+Constraints:
+1. Difficulty: {{ difficulty }}
+2. The question should test understanding of the keywords or theme.
+3. Provide 4 options.
+4. Output JSON strictly matching this schema:
+{{ schema_json }}

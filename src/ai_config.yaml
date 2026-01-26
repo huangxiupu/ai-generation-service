@@ -1,0 +1,75 @@
+# AI Service Configuration
+# 可以在此处定义提供商和路由策略。
+# 支持使用 ${ENV_VAR} 语法引用环境变量。
+
+providers:
+  zhipu:
+    type: openai
+    base_url: https://open.bigmodel.cn/api/coding/paas/v4
+    api_key: ${ZHIPU_API_KEY}
+    # 智谱特有的音色映射
+    voice_map:
+      narrator: tongtong
+      male: chuichui
+      female: xiaochen
+
+  aliyun:
+    type: aliyun
+    base_url: https://dashscope.aliyuncs.com/compatible-mode/v1
+    api_key: ${DASHSCOPE_API_KEY}
+    # 阿里云特有的音色映射
+    voice_map:
+      narrator: longxiaochun_v2
+      male: longxiaocheng
+      female: longxiaoxia
+
+  siliconflow:
+    type: openai
+    base_url: https://api.siliconflow.cn/v1
+    api_key: ${SILICONFLOW_API_KEY}
+    voice_map:
+      narrator: fishaudio/fish-speech-1.4
+      male: fishaudio/fish-speech-1.4
+      female: fishaudio/fish-speech-1.4
+
+  volcengine:
+    type: openai
+    base_url: https://ark.cn-beijing.volces.com/api/v3
+    api_key: ${VOLCENGINE_API_KEY}
+    voice_map:
+      narrator: doubao-tts-narrator
+      male: doubao-tts-male
+      female: doubao-tts-female
+
+  openrouter:
+    type: openai
+    base_url: https://openrouter.ai/api/v1
+    api_key: ${OPENROUTER_API_KEY}
+    voice_map:
+      narrator: alloy
+      male: echo
+      female: shimmer
+
+  modelscope:
+    type: modelscope
+    base_url: https://api-inference.modelscope.cn/v1/
+    api_key: ${MODELSCOPE_API_KEY}
+    # ModelScope 语音映射占位符，实际使用时请根据模型调整
+    voice_map:
+      narrator: speech_tts/v1
+      male: speech_tts/v1
+      female: speech_tts/v1
+
+# 路由配置：定义不同能力使用的提供商和模型
+routes:
+  text:
+    provider: zhipu
+    model: glm-4.7
+
+  image:
+    provider: siliconflow
+    model: Kwai-Kolors/Kolors
+
+  audio:
+    provider: aliyun
+    model: cosyvoice-v2

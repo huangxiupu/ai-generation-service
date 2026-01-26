@@ -1,0 +1,15 @@
+Context:
+- Grade Level: {{ grade_level }}
+- Topic/Theme: {{ topic }}
+- Keywords: {{ keywords | join(', ') }}
+
+Task:
+Generate a fill-in-the-blanks exercise.
+
+Constraints:
+1. Difficulty: {{ difficulty }}
+2. Create a short text/paragraph.
+3. Mark blanks with {{ '{{blank}}' }}.
+4. Provide a word bank if appropriate.
+5. Output JSON strictly matching this schema:
+{{ schema_json }}
