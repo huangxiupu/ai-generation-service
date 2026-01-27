@@ -1,0 +1,7 @@
+{% extends "user_prompts/base_exercise.j2" %}
+{% block task_instruction %}
+Generate a **Role Play Exercise**.
+1. Create a dialogue scenario suitable for Grade {{ context.meta.grade_level }}.
+2. **Asset Specs (L1 Core)**: You MUST generate `asset_specs` for `scenario_audio` if it involves narration or background ambience.
+3. The `roles` should be clear and interactive.
+{% endblock %}

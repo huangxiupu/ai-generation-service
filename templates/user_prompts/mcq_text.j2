@@ -1,17 +1,8 @@
-Context:
-- Grade Level: {{ grade_level }}
-- Topic/Theme: {{ topic }}
-- Keywords: {{ keywords | join(', ') }}
-{% if additional_context %}
-- Additional Context: {{ additional_context }}
-{% endif %}
-
-Task:
-Generate a multiple-choice question (Text-based).
-
-Constraints:
-1. Difficulty: {{ difficulty }}
-2. The question should test understanding of the keywords or theme.
-3. Provide 4 options.
-4. Output JSON strictly matching this schema:
-{{ schema_json }}
+{% extends "user_prompts/base_exercise.j2" %}
+{% block task_instruction %}
+Generate a **Multiple Choice Question (Text)**.
+1. Create a question that tests understanding of the `vocabulary` or `grammar` goals.
+2. Provide 3-4 options.
+3. Ensure one option is clearly correct and others are plausible distractors.
+4. (Optional) You can add `audio_url` to options if useful for pronunciation.
+{% endblock %}

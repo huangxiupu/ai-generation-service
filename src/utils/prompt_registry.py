@@ -22,3 +22,10 @@ class PromptRegistry:
 
     def get_system_prompt(self) -> str:
         return self.render("system_prompts/base.j2")
+
+    def get_esl_system_prompt(self, **kwargs) -> str:
+        """
+        Get the specialized ESL expert system prompt.
+        Requires context with meta.grade_level (e.g. context={'meta': {'grade_level': '1'}})
+        """
+        return self.render("system_prompts/esl_expert.j2", **kwargs)

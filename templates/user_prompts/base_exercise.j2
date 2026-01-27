@@ -1,0 +1,37 @@
+### SOURCE MATERIAL
+**Book**: {{ context.meta.book_id }} | **Unit**: {{ context.meta.unit_id }}
+**Pedagogical Goals**:
+- Vocabulary: {{ context.pedagogical_goals.vocabulary | join(', ') }}
+- Grammar: {{ context.pedagogical_goals.grammar | join(', ') }}
+- Phonics: {{ context.pedagogical_goals.phonics | join(', ') }}
+
+**Content Context**:
+Summary: {{ context.normalized_content.summary }}
+Visual Scene: {{ context.normalized_content.visual_scene }}
+Blocks:
+{{ context.normalized_content.blocks | tojson(indent=2) }}
+
+---
+
+### TASK INSTRUCTION
+{% block task_instruction %}
+Generate an exercise based on the source material.
+{% endblock %}
+
+### GRADE ADAPTIVITY GUIDELINES (Grade {{ context.meta.grade_level }})
+{% if context.meta.grade_level.startswith(('1', '2')) %}
+- **Vocabulary**: Use simple, high-frequency words. Focus on concrete nouns and verbs.
+- **Sentence Structure**: Keep sentences short (S-V-O). Avoid complex clauses.
+- **Scaffolding**: Provide hints. Use visual descriptions in image prompts.
+{% elif context.meta.grade_level.startswith(('3', '4')) %}
+- **Vocabulary**: Introduce topic-specific vocabulary.
+- **Sentence Structure**: Use compound sentences (and, but, because).
+- **Scaffolding**: Focus on comprehension checking.
+{% else %}
+- **Vocabulary**: Use academic and abstract vocabulary suitable for the level.
+- **Sentence Structure**: Use complex sentences and varied paragraph structures.
+- **Scaffolding**: Focus on critical thinking and inference.
+{% endif %}
+
+### REQUIRED OUTPUT SCHEMA
+{{ schema_json }}

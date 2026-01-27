@@ -1,15 +1,8 @@
-Context:
-- Grade Level: {{ grade_level }}
-- Topic/Theme: {{ topic }}
-- Keywords: {{ keywords | join(', ') }}
-
-Task:
-Generate a fill-in-the-blanks exercise.
-
-Constraints:
-1. Difficulty: {{ difficulty }}
-2. Create a short text/paragraph.
-3. Mark blanks with {{ '{{blank}}' }}.
-4. Provide a word bank if appropriate.
-5. Output JSON strictly matching this schema:
-{{ schema_json }}
+{% extends "user_prompts/base_exercise.j2" %}
+{% block task_instruction %}
+Generate a **Fill-in-the-Blanks Exercise**.
+1. Select a sentence from the content or create a new one using target vocabulary.
+2. Replace the target word with `{{blank}}`.
+3. Provide the `original_text`.
+4. Optionally provide a `word_bank` of distractor words.
+{% endblock %}
