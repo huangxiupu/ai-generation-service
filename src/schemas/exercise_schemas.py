@@ -1,5 +1,6 @@
 from typing import List, Optional, Union, Dict, Any, Literal
 from pydantic import BaseModel, Field
+from .enums import GradeLevel, DifficultyLevel, ExerciseType
 
 # Base Models for Common Structure
 
@@ -316,22 +317,22 @@ class PhonicsPracticeExercise(BaseModel):
 # --- Registry ---
 
 EXERCISE_MODELS = {
-    "mcq_text": MCQTextExercise,
-    "mcq_image": MCQImageExercise,
-    "true_false": TrueFalseExercise,
-    "fill_in_blanks": FillInBlanksExercise,
-    "sentence_ordering": SentenceOrderingExercise,
-    "sequence_ordering": SequenceOrderingExercise,
-    "error_correction": ErrorCorrectionExercise,
-    "table_completion": TableCompletionExercise,
-    "short_answer": ShortAnswerExercise,
-    "writing_prompt": WritingPromptExercise,
-    "categorization": CategorizationExercise,
-    "matching": MatchingExercise,
-    "role_play_prompt": RolePlayExercise,
-    "text_shadowing": TextShadowingExercise,
-    "listening_comprehension": ListeningComprehensionExercise,
-    "phonics_practice": PhonicsPracticeExercise,
+    ExerciseType.MCQ_TEXT: MCQTextExercise,
+    ExerciseType.MCQ_IMAGE: MCQImageExercise,
+    ExerciseType.TRUE_FALSE: TrueFalseExercise,
+    ExerciseType.FILL_IN_BLANKS: FillInBlanksExercise,
+    ExerciseType.SENTENCE_ORDERING: SentenceOrderingExercise,
+    ExerciseType.SEQUENCE_ORDERING: SequenceOrderingExercise,
+    ExerciseType.ERROR_CORRECTION: ErrorCorrectionExercise,
+    ExerciseType.TABLE_COMPLETION: TableCompletionExercise,
+    ExerciseType.SHORT_ANSWER: ShortAnswerExercise,
+    ExerciseType.WRITING_PROMPT: WritingPromptExercise,
+    ExerciseType.CATEGORIZATION: CategorizationExercise,
+    ExerciseType.MATCHING: MatchingExercise,
+    ExerciseType.ROLE_PLAY_PROMPT: RolePlayExercise,
+    ExerciseType.TEXT_SHADOWING: TextShadowingExercise,
+    ExerciseType.LISTENING_COMPREHENSION: ListeningComprehensionExercise,
+    ExerciseType.PHONICS_PRACTICE: PhonicsPracticeExercise,
 }
 
 # Helper to get JSON Schema

@@ -1,13 +1,15 @@
 from typing import List, Dict, Any, Optional, Literal, Union
 from pydantic import BaseModel, Field
+from .enums import SectionType, BlockType, AssetType, GradeLevel
 
 # --- Standardized Context Models ---
 
 class MetaInfo(BaseModel):
+    section_id: Optional[str] = None
     book_id: str
-    grade_level: str
+    grade_level: GradeLevel
     unit_id: Union[int, str]
-    section_type: str = "unknown"
+    section_type: SectionType = SectionType.UNKNOWN
 
 class PedagogicalGoals(BaseModel):
     vocabulary: List[str] = Field(default_factory=list)
@@ -15,7 +17,7 @@ class PedagogicalGoals(BaseModel):
     phonics: List[str] = Field(default_factory=list)
 
 class Block(BaseModel):
-    semantic_type: str
+    semantic_type: BlockType
     payload: Dict[str, Any]
 
 class NormalizedContent(BaseModel):
@@ -33,7 +35,7 @@ class StandardizedContext(BaseModel):
 class AssetSpec(BaseModel):
     id: str
     target_path: str  # JSON Path, e.g., "items[0].options[0].image_url"
-    type: Literal["image", "audio"]
+    type: AssetType
     prompt: Optional[str] = None  # for Image
     content: Optional[str] = None # for Audio
     params: Dict[str, Any] = Field(default_factory=dict)
