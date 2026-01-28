@@ -96,6 +96,11 @@ class RealTextGenService:
         except JSONParseError as e:
             raise e
             
+        # 4. 验证内容有效性
+        # 如果 blocks 为空且 summary 为空，视为预处理失败
+        if not data.get("blocks") and not data.get("summary"):
+             raise ValueError("预处理失败：LLM 返回了空的内容（无摘要且无内容块），请重试。")
+
         return data
 
 class MockTextGenService:

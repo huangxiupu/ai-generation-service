@@ -91,6 +91,7 @@ class ContextEngine:
         """
         使用 LLM 标准化内容并生成推荐。
         """
+        print(f"[ContextEngine] 准备 LLM 请求数据...")
         llm_context = {
             "section_type": section_data.get("section_type"),
             "content": section_data.get("content"),
@@ -98,37 +99,30 @@ class ContextEngine:
             "book_meta": book_meta,
             "unit_meta": unit_meta
         }
+        print(f"[ContextEngine] LLM Input Context:\n{json.dumps(llm_context, ensure_ascii=False, indent=2)}")
         
-        try:
-            llm_result = self.text_gen_service.normalize_context(llm_context)
-            
-            blocks = []
-            for b in llm_result.get("blocks", []):
-                # 确保 semantic_type 有效或进行映射/回退
-                try:
-                    blocks.append(Block(semantic_type=b["semantic_type"], payload=b["payload"]))
-                except Exception:
-                    # 无效块结构的回退
-                    blocks.append(Block(semantic_type=BlockType.GENERIC, payload=b))
-
-            normalized_content = NormalizedContent(
-                summary=llm_result.get("summary", ""),
-                visual_scene=llm_result.get("visual_scene", ""),
-                blocks=blocks
-            )
-            
-            recommendations = []
-            for r in llm_result.get("recommendations", []):
-                try:
-                    recommendations.append(ExerciseRecommendation(**r))
-                except Exception:
-                    continue
-                    
-            return normalized_content, recommendations
-            
-        except Exception as e:
-            print(f"LLM Normalization failed: {e}. Falling back to heuristic.")
-            return self._process_content_heuristic(section_data), []
+        print(f"[ContextEngine] 正在调用 text_gen_service.normalize_context...")
+        raw_result = self.text_gen_service.normalize_context(llm_context)
+        print(f"[ContextEngine] LLM 返回原始结果:\n{json.dumps(raw_result, ensure_ascii=False, indent=2)}")
+        
+        # 解析 LLM 返回的 JSON
+        print(f"[ContextEngine] 正在解析 LLM 结果为模型对象...")
+        
+        # 修正：LLM 输出是扁平结构，直接包含 summary/visual_scene/blocks，而不是嵌套在 normalized_content 下
+        # 旧逻辑: normalized_content = NormalizedContent(**raw_result.get("normalized_content", {}))
+        
+        normalized_content = NormalizedContent(
+            summary=raw_result.get("summary", ""),
+            visual_scene=raw_result.get("visual_scene", ""),
+            blocks=raw_result.get("blocks", [])
+        )
+        
+        recommendations = []
+        for rec_data in raw_result.get("recommendations", []):
+            recommendations.append(ExerciseRecommendation(**rec_data))
+        
+        print(f"[ContextEngine] 解析完成，包含 {len(recommendations)} 条推荐")
+        return normalized_content, recommendations
 
     def _process_content_heuristic(self, section_data: Dict[str, Any]) -> NormalizedContent:
         """

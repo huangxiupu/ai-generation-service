@@ -12,7 +12,7 @@ Visual Context:
 
 Output Schema (JSON):
 {
-  "summary": "Brief summary of the section content",
+  "summary": "Brief summary of the section content (Must be non-empty)",
   "visual_scene": "Description of the visual scene (if applicable)",
   "blocks": [
     {
@@ -23,7 +23,7 @@ Output Schema (JSON):
   "recommendations": [
     {
       "exercise_type": "One of [mcq_text, mcq_image, true_false, fill_in_blanks, sentence_ordering, sequence_ordering, error_correction, table_completion, short_answer, writing_prompt, categorization, matching, role_play_prompt, text_shadowing, listening_comprehension, phonics_practice]",
-      "reason": "Why this exercise is suitable for this content",
+      "reason": "Why this exercise is suitable for this content (MUST be in Chinese)",
       "suggested_difficulty": "Easy/Medium/Hard"
     }
   ]
@@ -31,6 +31,7 @@ Output Schema (JSON):
 
 Instructions:
 1.  **Normalization**: Break down the content into semantic blocks.
+    -   **CRITICAL**: If the Raw Content contains any text, you MUST extract at least one block. Do not return an empty blocks array.
     -   For dialogues, use "conversation" type with "turns" (speaker, text).
     -   For stories/articles, use "prose" or "verse".
     -   For vocabulary, use "vocabulary_list" with items (word, definition, example).
@@ -38,5 +39,6 @@ Instructions:
 2.  **Recommendation**: Suggest 3-5 exercise types that would best reinforce the learning objectives and content.
     -   Consider the Grade Level and Section Type.
     -   Ensure the exercise type is feasible to generate from the content.
+    -   **LANGUAGE**: The `reason` field MUST be written in Chinese (Simplified).
 
 Response must be valid JSON only.

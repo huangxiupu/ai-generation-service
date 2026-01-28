@@ -19,14 +19,22 @@ class OpenAICompatibleProvider(AIProvider):
                         **kwargs) -> str:
         
         # 如果需要，过滤掉不支持的参数，或者直接透传
-        response = self.client.chat.completions.create(
-            model=model,
-            messages=messages,
-            temperature=temperature,
-            max_tokens=max_tokens,
-            **kwargs
-        )
-        return response.choices[0].message.content
+        print(f"[OpenAICompatible] 调用模型: {model}")
+        print(f"[OpenAICompatible] Base URL: {self.client.base_url}")
+        print(f"[OpenAICompatible] 消息数量: {len(messages)}")
+        try:
+            response = self.client.chat.completions.create(
+                model=model,
+                messages=messages,
+                temperature=temperature,
+                max_tokens=max_tokens,
+                **kwargs
+            )
+            print(f"[OpenAICompatible] 成功收到响应")
+            return response.choices[0].message.content
+        except Exception as e:
+            print(f"[OpenAICompatible] 调用失败: {str(e)}")
+            raise e
 
     def generate_image(self, 
                        prompt: str, 

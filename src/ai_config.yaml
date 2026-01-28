@@ -5,7 +5,7 @@
 providers:
   zhipu:
     type: openai
-    base_url: https://open.bigmodel.cn/api/coding/paas/v4
+    base_url: https://open.bigmodel.cn/api/paas/v4
     api_key: ${ZHIPU_API_KEY}
     # 智谱特有的音色映射
     voice_map:
@@ -64,7 +64,7 @@ providers:
 routes:
   text:
     provider: zhipu
-    model: glm-4.7
+    model: glm-4.7-flash
 
   image:
     provider: siliconflow

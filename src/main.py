@@ -1,4 +1,5 @@
 from fastapi import FastAPI, HTTPException, BackgroundTasks
+from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
 from typing import Dict, Any, List, Optional
 import uuid
@@ -7,6 +8,15 @@ from src.orchestrator.pipeline_controller import PipelineController
 from src.schemas.enums import ExerciseGenerationStatus
 
 app = FastAPI()
+
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
+
 gateway = AIServiceGateway()
 controller = PipelineController(
     text_service=gateway.text_service,
@@ -25,12 +35,16 @@ class GenerateExerciseRequest(BaseModel):
 
 @app.post("/api/preprocess")
 async def preprocess_section_endpoint(request: PreprocessRequest):
+    print(f"收到预处理请求: section_id={request.section_id}")
     try:
+        print(f"正在调用 gateway.preprocess_section...")
         result = gateway.preprocess_section(
             request.section_id
         )
+        print(f"预处理成功: {request.section_id}")
         return result
     except Exception as e:
+        print(f"预处理失败: {str(e)}")
         import traceback
         traceback.print_exc()
         raise HTTPException(status_code=500, detail=str(e))
@@ -181,3 +195,7 @@ async def generate_exercise_endpoint(request: GenerateExerciseRequest, backgroun
 @app.get("/health")
 async def health_check():
     return {"status": "ok"}
+
+if __name__ == "__main__":
+    import uvicorn
+    uvicorn.run(app, host="0.0.0.0", port=8000)
