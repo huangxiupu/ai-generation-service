@@ -2,7 +2,8 @@
 {% block task_instruction %}
 Generate a **Multiple Choice Question (Text)**.
 1. Create a question that tests understanding of the `vocabulary` or `grammar` goals.
-2. Provide 3-4 options.
-3. Ensure one option is clearly correct and others are plausible distractors.
-4. (Optional) You can add `audio_url` to options if useful for pronunciation.
+2. **Self-Contained**: Ensure the question stem provides sufficient context. If the question refers to a specific event in a story, briefly summarize the context (e.g., "In the story about the rabbit, why did he run?").
+3. Provide 3-4 options.
+4. Ensure one option is clearly correct and others are plausible distractors.
+5. (Optional) You can add `audio_url` to options if useful for pronunciation. If so, use object format `{"text": "...", "audio_url": "..."}` and generate `asset_specs`.
 {% endblock %}

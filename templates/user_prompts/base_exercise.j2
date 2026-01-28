@@ -33,5 +33,31 @@ Generate an exercise based on the source material.
 - **Scaffolding**: Focus on critical thinking and inference.
 {% endif %}
 
+### HINT STRATEGY (MANDATORY)
+You MUST provide 2 hints for every exercise to support ESL learners.
+- **Language**: Simplified Chinese (简体中文).
+- **Hint 1**: Context/Translation (e.g., "这个词表示非常开心").
+- **Hint 2**: Clue/Exclusion (e.g., "以字母 E 开头").
+- **Constraint**: NEVER give the direct answer in hints.
+
+### ASSET GENERATION STRATEGY
+If the exercise requires images or audio (e.g., for options, questions):
+1. Do NOT put prompts in `options_prompts` or `left_prompts`.
+2. You MUST generate `asset_specs` inside the `generation` object.
+3. `asset_specs` format:
+   ```json
+   "generation": {
+     "asset_specs": [
+       {
+         "id": "unique_id",
+         "target_path": "items[0].options[0].image_url",
+         "type": "image",
+         "prompt": "A red apple",
+         "params": {}
+       }
+     ]
+   }
+   ```
+
 ### REQUIRED OUTPUT SCHEMA
 {{ schema_json }}

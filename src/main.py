@@ -58,11 +58,15 @@ def process_generation_task(section_id: str, types: List[str], count: int, batch
                         # 步骤 1: 生成骨架
                         skeleton = controller.generate_skeleton(context, ex_type)
                         
+                        # Extract difficulty
+                        difficulty_val = skeleton.generation.get("difficulty", "Medium") if skeleton.generation else "Medium"
+
                         # 插入初始记录
                         record_data = {
                             "section_id": section_id,
                             "exercise_type_id": type_id,
                             "content": skeleton.model_dump(),
+                            "difficulty": difficulty_val,
                             "status": ExerciseGenerationStatus.GENERATING,
                             "batch_id": batch_id
                         }

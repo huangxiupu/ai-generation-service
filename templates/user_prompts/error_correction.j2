@@ -2,6 +2,9 @@
 {% block task_instruction %}
 Generate an **Error Correction Exercise**.
 1. Create a sentence with a specific grammatical error relevant to `grammar` goals.
-2. The error should be common for learners at this level (e.g., subject-verb agreement).
-3. **Reinforcement Audio**: You MUST generate `correct_audio` in the grading section.
+2. **Context Requirement**: The sentence MUST provide sufficient context (e.g., time markers like 'yesterday', 'now', or frequency adverbs) to ensure the correction is UNAMBIGUOUS.
+   - Bad Example: "He go to school." (Could be "goes" or "went")
+   - Good Example: "Yesterday, he go to school." (Correction is definitely "went")
+3. The error should be common for learners at this level.
+4. **Reinforcement Audio**: You MUST generate `correct_audio` in the grading section.
 {% endblock %}

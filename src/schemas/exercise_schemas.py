@@ -4,6 +4,15 @@ from .enums import GradeLevel, DifficultyLevel, ExerciseType
 
 # 基础模型：通用结构
 
+class AssetSpec(BaseModel):
+    """资源生成规格定义"""
+    id: str
+    target_path: str = Field(..., description="JSON path to inject the asset URL")
+    type: Literal["image", "audio", "video"]
+    prompt: Optional[str] = Field(None, description="Image generation prompt")
+    content: Optional[str] = Field(None, description="Text content for TTS or audio generation")
+    params: Optional[Dict[str, Any]] = Field(None, description="Additional parameters")
+
 class BaseGrading(BaseModel):
     """所有练习的基础评分结构。"""
     explanation: Optional[str] = Field(None, description="正确答案的解析")
@@ -11,8 +20,9 @@ class BaseGrading(BaseModel):
 class BaseGeneration(BaseModel):
     """基础生成元数据。"""
     grade_levels: Optional[List[str]] = Field(None, description="目标年级，例如 ['1A', '1B']")
-    difficulty: Optional[str] = Field(None, description="难度等级")
+    difficulty: str = Field(..., description="难度等级")
     keywords: Optional[List[str]] = Field(None, description="本练习关注的关键词")
+    asset_specs: Optional[List[AssetSpec]] = Field(None, description="资源生成规格列表")
 
 class BaseExerciseContent(BaseModel):
     """具有通用音频支持 (ESL) 的基础内容结构。"""
@@ -29,10 +39,7 @@ class MCQTextOption(BaseModel):
     audio_url: Optional[str] = Field(None, description="该选项的 TTS 音频")
 
 class MCQTextContent(BaseExerciseContent):
-    options: List[str]  # 纯文本简化版，如果需要每个选项都有音频，请使用 MCQTextOption
-    # 注意：为了在简单的文本选择题中支持每个选项的音频，我们可能需要复杂的对象或仅依赖主文本。
-    # 示例显示的是简单的字符串。除非另有说明，否则我们在简单的 mcq_text 选项中坚持使用字符串。
-    # 然而，ESL 专家表示“选项音频很有帮助”。我们目前保持简单以匹配示例，但保留扩展可能。
+    options: List[Union[str, MCQTextOption]]  # 支持纯文本或带有音频的对象
     pass
 
 class MCQTextGrading(BaseGrading):
@@ -204,7 +211,7 @@ class MCQImageGrading(BaseGrading):
     answer_key: int
 
 class MCQImageGeneration(BaseGeneration):
-    options_prompts: Optional[List[str]] = None
+    pass
 
 class MCQImageExercise(BaseModel):
     content: MCQImageContent
@@ -230,8 +237,7 @@ class MatchingGrading(BaseGrading):
     answer_key: List[MatchingPair]
 
 class MatchingGeneration(BaseGeneration):
-    left_prompts: Optional[List[str]] = None
-    right_prompts: Optional[List[str]] = None
+    pass
 
 class MatchingExercise(BaseModel):
     content: MatchingContent

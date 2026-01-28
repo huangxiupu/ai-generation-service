@@ -56,4 +56,6 @@ class ExerciseSkeleton(BaseModel):
     title: str
     instructions: str
     items: List[Dict[str, Any]]
+    grading: Optional[Dict[str, Any]] = None
+    generation: Optional[Dict[str, Any]] = None
     asset_specs: List[AssetSpec] = Field(default_factory=list, description="待生成资源规范")

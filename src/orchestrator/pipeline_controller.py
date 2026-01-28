@@ -75,51 +75,38 @@ class PipelineController:
         """
         # 提取公共字段
         content = data.get("content", {})
+        grading = data.get("grading", {})
+        generation = data.get("generation", {})
+
+        # Ensure difficulty is present (required field)
+        if "difficulty" not in generation or not generation["difficulty"]:
+            generation["difficulty"] = data.get("difficulty", "Medium")
+
         # 尝试找到合理的标题/说明
         title = content.get("question") or content.get("statement") or content.get("text") or "Untitled Exercise"
         instructions = "Please complete the exercise." 
         
-        items = []
+        items = [content]
         asset_specs = []
         
-        # 针对特定旧版类型的适配器，这些类型暗示了资源生成
-        if exercise_type == "mcq_image":
-            # 将旧版 mcq_image 结构映射到 Skeleton
-            options = content.get("options", [])
-            prompts = data.get("generation", {}).get("options_prompts", [])
+        # 优先从 generation.asset_specs 获取 (新 Schema 支持)
+        specs_data = generation.get("asset_specs", [])
+        # 兼容性：如果根节点有，也合并
+        if "asset_specs" in data:
+            specs_data.extend(data["asset_specs"])
             
-            # 对于 MCQ，"item" 通常是问题对象本身
-            items.append(content)
-            
-            # 为每个选项创建 AssetSpecs
-            for idx, opt in enumerate(options):
-                # 确保选项有 ID
-                opt_id = opt.get("id", f"opt_{idx}")
-                # 从并行数组获取 prompt 或使用回退值
-                prompt = prompts[idx] if idx < len(prompts) else f"Illustration for {opt.get('caption', 'option')}"
-                
-                spec = AssetSpec(
-                    id=f"img_{opt_id}",
-                    target_path=f"items[0].options[{idx}].image_url",
-                    type="image",
-                    prompt=prompt,
-                    params={"reference_style": "textbook_illustration"}
-                )
-                asset_specs.append(spec)
-                
-        else:
-            # 通用处理：假设整个内容是一个项目
-            items.append(content)
-            
-            # 如果数据直接包含 'asset_specs' (新提示词风格)
-            if "asset_specs" in data:
-                for spec_data in data["asset_specs"]:
-                    asset_specs.append(AssetSpec(**spec_data))
+        for spec_data in specs_data:
+            try:
+                asset_specs.append(AssetSpec(**spec_data))
+            except Exception as e:
+                self.logger.warning(f"Invalid asset spec: {e}")
                     
         return ExerciseSkeleton(
             title=title,
             instructions=instructions,
             items=items,
+            grading=grading,
+            generation=generation,
             asset_specs=asset_specs
         )
 

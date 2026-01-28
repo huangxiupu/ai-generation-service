@@ -2,6 +2,9 @@
 {% block task_instruction %}
 Generate a **Listening Comprehension Exercise**.
 1. Create a listening script (dialogue or monologue).
+   - **CRITICAL**: The script MUST explicitly contain all the information required to answer the questions below. For example, if the question asks "What day is the party?", the script MUST mention the specific day (e.g., "The party is on Friday").
+   - Ensure the content provides sufficient context (who, what, where, when) for the student to understand the scenario.
 2. **Asset Specs (L1 Core)**: You MUST generate `asset_specs` for the main `audio_url`. The content must be the full script.
 3. Create questions based on this script.
+   - Questions must be directly answerable from the script content alone.
 {% endblock %}

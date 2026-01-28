@@ -2,7 +2,8 @@
 {% block task_instruction %}
 Generate a **Fill-in-the-Blanks Exercise**.
 1. Select a sentence from the content or create a new one using target vocabulary.
-2. Replace the target word with `{{blank}}`.
-3. Provide the `original_text`.
-4. Optionally provide a `word_bank` of distractor words.
+2. **Unambiguous Context**: Ensure the sentence provides enough context so that the missing word is the ONLY logical fit, or the best fit among provided options. Avoid ambiguous sentences.
+3. Replace the target word with `{{blank}}`.
+4. Provide the `original_text`.
+5. Optionally provide a `word_bank` of distractor words.
 {% endblock %}

@@ -2,6 +2,7 @@
 {% block task_instruction %}
 Generate a **True/False Question**.
 1. Create a statement based on the `normalized_content` (e.g., a fact from the story).
-2. The statement should be simple and direct.
-3. Ensure the answer key is unambiguous.
+2. **Context Check**: Ensure the statement is self-contained enough to be judged. (e.g., instead of "He is happy", use "Tom is happy at the end of the story").
+3. The statement should be simple and direct.
+4. Ensure the answer key is unambiguous.
 {% endblock %}
