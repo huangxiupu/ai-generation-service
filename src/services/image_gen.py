@@ -44,7 +44,7 @@ class RealImageGenService:
             return f"/static/images/{filename}"
             
         except Exception as e:
-            print(f"Error processing image generation result: {e}")
+            print(f"处理图像生成结果时出错: {e}")
             raise e
 
     def _enhance_prompt(self, prompt: str, style: str) -> str:

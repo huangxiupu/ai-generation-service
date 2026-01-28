@@ -169,9 +169,9 @@ class MockTextGenService:
                 }
             }
         else:
-            # 未知类型的回退
+            # 未知类型的回退处理
             return {
-                "error": f"Mock data for {exercise_type} not implemented",
+                "error": f"尚未实现 {exercise_type} 的模拟数据",
                 "content": {},
                 "grading": {"answer_key": None}
             }
@@ -181,8 +181,8 @@ class MockTextGenService:
         返回用于测试的模拟标准化数据。
         """
         return {
-            "summary": "Mock summary of the section.",
-            "visual_scene": "Mock visual description.",
+            "summary": "章节内容的模拟摘要。",
+            "visual_scene": "模拟视觉描述。",
             "blocks": [
                 {
                     "semantic_type": "conversation",
@@ -197,8 +197,7 @@ class MockTextGenService:
             "recommendations": [
                 {
                     "exercise_type": "mcq_text",
-                    "reason": "Good for checking understanding of the conversation.",
-                    "suggested_difficulty": "Easy"
+                    "reason": "有助于检查对对话的理解。",
                 }
             ]
         }

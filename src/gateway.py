@@ -41,37 +41,37 @@ class AIServiceGateway:
 
     def preprocess_section(self, section_id: str):
         """
-        预处理 Section 数据。
-        1. 从数据库获取 Section, Unit, Book 信息。
+        预处理章节 (Section) 数据。
+        1. 从数据库获取章节、单元和书籍信息。
         2. 调用 ContextEngine 进行标准化。
         3. 将结果保存到 section_preprocessing 表。
         """
         if not self.db:
-            raise Exception("Database connection not initialized")
+            raise Exception("数据库连接未初始化")
 
-        # 1. Fetch Section with nested Unit and Book data
-        # Note: Supabase JS syntax is different from Python.
-        # Python supabase client uses postgrest syntax.
-        # We need to fetch step by step or use a complex query if relations are set up.
-        # Let's fetch section first.
+        # 1. 获取带有嵌套 Unit 和 Book 数据的 Section
+        # 注意：Supabase JS 语法与 Python 不同。
+        # Python supabase 客户端使用 postgrest 语法。
+        # 如果没有设置好关联关系，我们需要逐步获取或使用复杂查询。
+        # 首先获取章节信息。
         
         section_resp = self.db.table("book_sections").select("*").eq("id", section_id).single().execute()
         if not section_resp.data:
-            raise Exception(f"Section {section_id} not found")
+            raise Exception(f"未找到 ID 为 {section_id} 的章节")
         section = section_resp.data
         
         unit_resp = self.db.table("book_units").select("*").eq("id", section['unit_id']).single().execute()
         if not unit_resp.data:
-            raise Exception(f"Unit {section['unit_id']} not found")
+            raise Exception(f"未找到 ID 为 {section['unit_id']} 的单元")
         unit = unit_resp.data
         
         book_resp = self.db.table("books").select("*").eq("id", unit['book_id']).single().execute()
         if not book_resp.data:
-            raise Exception(f"Book {unit['book_id']} not found")
+            raise Exception(f"未找到 ID 为 {unit['book_id']} 的书籍")
         book = book_resp.data
 
-        # 2. Normalize
-        # Construct dictionaries expected by ContextEngine
+        # 2. 标准化处理
+        # 构建 ContextEngine 所需的上下文字典
         section_data = {
             "section_type": section.get("type"),
             "content": section.get("content"),
@@ -92,8 +92,8 @@ class AIServiceGateway:
         standardized_context = processing_result.standardized_context
         recommendations = processing_result.recommendations
         
-        # 3. Save to DB
-        # Check if exists
+        # 3. 保存预处理结果到数据库
+        # 检查是否已存在记录
         existing = self.db.table("section_preprocessing").select("id").eq("section_id", section_id).execute()
         
         data_to_save = {
@@ -107,7 +107,7 @@ class AIServiceGateway:
         else:
             self.db.table("section_preprocessing").insert(data_to_save).execute()
             
-        # 4. Save Recommendations
+        # 4. 保存推荐结果
         recs_json = [rec.model_dump() for rec in recommendations]
         
         existing_recs = self.db.table("section_exercise_recommendations").select("id").eq("section_id", section_id).execute()

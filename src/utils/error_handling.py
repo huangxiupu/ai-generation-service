@@ -13,23 +13,23 @@ class SensitiveContentError(Exception):
 
 def repair_and_parse_json(json_str: str) -> dict:
     """
-    Attempt to repair and parse a JSON string.
+    尝试修复并解析 JSON 字符串。
     """
     try:
-        # First try standard parse
+        # 首先尝试标准解析
         return json.loads(json_str)
     except json.JSONDecodeError:
         try:
-            # Try repair
+            # 尝试修复
             repaired_str = repair_json(json_str)
             return json.loads(repaired_str)
         except Exception as e:
-            raise JSONParseError(f"Failed to repair JSON: {str(e)}")
+            raise JSONParseError(f"无法修复 JSON: {str(e)}")
 
-# Retry decorator configuration
-# Retry up to 2 times (total 3 attempts) with exponential backoff
+# 重试装饰器配置
+# 指数回退，最多重试 2 次（总共 3 次尝试）
 retry_on_api_error = retry(
     stop=stop_after_attempt(3),
     wait=wait_exponential(multiplier=1, min=2, max=10),
-    retry=retry_if_exception_type(Exception) # Narrow this down in production to specific API errors
+    retry=retry_if_exception_type(Exception) # 在生产环境中应将其缩小为特定的 API 错误
 )

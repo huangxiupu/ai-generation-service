@@ -14,10 +14,10 @@ class AliyunProvider(AIProvider):
         # base_url 在 SDK 中通常不需要手动设置，除非是私有部署
 
     def chat_completion(self, model: str, messages: List[Dict[str, str]], **kwargs) -> str:
-        raise NotImplementedError("AliyunProvider does not support chat_completion yet.")
+        raise NotImplementedError("AliyunProvider 暂不支持 chat_completion。")
 
     def generate_image(self, prompt: str, model: str, **kwargs) -> str:
-        raise NotImplementedError("AliyunProvider does not support generate_image yet.")
+        raise NotImplementedError("AliyunProvider 暂不支持 generate_image。")
 
     def generate_audio(self, text: str, model: str, voice: str, speed: float = 1.0, **kwargs) -> bytes:
         """
@@ -31,14 +31,14 @@ class AliyunProvider(AIProvider):
         # 或者在构造 SpeechSynthesizer 时传递。
         # 根据官方文档，speed 等参数可以在构造函数中通过 extra_params 传递，或者有些版本支持直接参数。
         # CosyVoice 模型通常接受 'speech_rate' 或 'speed_ratio'。
-        # 这里我们尝试将 extra parameters 放入 kwargs
+        # 这里我们尝试将额外的参数放入 kwargs
         
         # 构建调用参数
         call_kwargs = {}
         
         # 处理语速
-        # CosyVoice 似乎使用 'speed_ratio' (float, default 1.0)
-        # Sambert 使用 'speech_rate' (int, -500 to 500)
+        # CosyVoice 似乎使用 'speed_ratio' (float, 默认 1.0)
+        # Sambert 使用 'speech_rate' (int, -500 到 500)
         # 我们假设使用 CosyVoice，因为模型是 cosyvoice-v2
         if abs(speed - 1.0) > 1e-6:
              # 如果是 cosyvoice，通常放在 format 或 parameters 中
@@ -72,4 +72,4 @@ class AliyunProvider(AIProvider):
             audio = synthesizer.call(text)
             return audio
         except Exception as e:
-             raise Exception(f"Aliyun TTS SDK Error: {e}")
+             raise Exception(f"阿里云 TTS SDK 错误: {e}")

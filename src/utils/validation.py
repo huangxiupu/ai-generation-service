@@ -10,29 +10,29 @@ class SchemaValidator:
     @staticmethod
     def repair_json(json_str: str) -> Dict[str, Any]:
         """
-        Attempts to repair malformed JSON strings common in LLM outputs.
-        Handles:
-        - Markdown code blocks (```json ... ```)
-        - Trailing commas (simple cases)
+        尝试修复 LLM 输出中常见的格式错误的 JSON 字符串。
+        处理情况：
+        - Markdown 代码块 (```json ... ```)
+        - 尾随逗号（简单情况）
         """
         if not isinstance(json_str, str):
-            # If it's already a dict/list, return it
+            # 如果已经是字典或列表，直接返回
             return json_str
             
-        # 1. Remove Markdown code blocks
+        # 1. 移除 Markdown 代码块
         match = re.search(r'```(?:json)?\s*([\s\S]*?)\s*```', json_str)
         if match:
             json_str = match.group(1)
             
         json_str = json_str.strip()
         
-        # 2. Try parsing
+        # 2. 尝试解析
         try:
             return json.loads(json_str)
         except json.JSONDecodeError:
             pass
             
-        # 3. Try to fix trailing commas which are common: Remove ,] -> ] and ,} -> }
+        # 3. 尝试修复常见的尾随逗号：移除 ,] -> ] 和 ,} -> }
         json_str_fixed = re.sub(r',\s*([\]}])', r'\1', json_str)
         
         try:
@@ -40,43 +40,43 @@ class SchemaValidator:
         except json.JSONDecodeError:
              pass
 
-        # If all fails, raise original error or custom error
-        raise ValueError(f"Failed to parse JSON: {json_str[:100]}...")
+        # 如果全部失败，抛出原始错误或自定义错误
+        raise ValueError(f"无法解析 JSON: {json_str[:100]}...")
 
     @staticmethod
     def validate_model(data: Union[Dict, str], exercise_type: Union[ExerciseType, str]) -> BaseModel:
         """
-        Validate data against the Pydantic model for the given exercise_type.
-        Supports automatic JSON repair if data is a string.
+        根据给定 exercise_type 的 Pydantic 模型验证数据。
+        如果数据是字符串，支持自动 JSON 修复。
         """
-        # Resolve ExerciseType enum if string passed
+        # 如果传入的是字符串，解析 ExerciseType 枚举
         if isinstance(exercise_type, str):
             try:
                 exercise_type = ExerciseType(exercise_type)
             except ValueError:
-                # If invalid enum value, might raise error or let EXERCISE_MODELS lookup fail
+                # 如果是无效的枚举值，可能会抛出错误或让 EXERCISE_MODELS 查找失败
                 pass
 
         model_class = EXERCISE_MODELS.get(exercise_type)
         
         if not model_class:
-            raise ValueError(f"No schema found for exercise type: {exercise_type}")
+            raise ValueError(f"未找到练习类型对应的 schema: {exercise_type}")
 
-        # Parse string if needed
+        # 如果需要，解析字符串
         if isinstance(data, str):
             data = SchemaValidator.repair_json(data)
 
-        # Validate
+        # 验证
         try:
             return model_class.model_validate(data)
         except ValidationError as e:
-            # Re-raise as ValueError to maintain interface consistency or expose detailed error
-            raise ValueError(f"Validation failed for {exercise_type}: {e}")
+            # 重新抛出为 ValueError 以保持接口一致性或暴露详细错误
+            raise ValueError(f"验证失败 ({exercise_type}): {e}")
 
     @staticmethod
     def validate(data: dict, exercise_type: str):
         """
-        Legacy validation method.
+        旧版验证方法。
         """
         SchemaValidator.validate_model(data, exercise_type)
         return True

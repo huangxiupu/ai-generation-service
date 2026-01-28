@@ -5,10 +5,10 @@ from ..schemas.orchestration import StandardizedContext, ExerciseSkeleton, Asset
 
 class PipelineController:
     """
-    Coordinates the generation process:
-    1. TextGenService -> Skeleton & AssetSpecs
-    2. ImageGenService/AudioGenService -> Assets
-    3. Assembly -> Final Result
+    协调生成过程：
+    1. TextGenService -> 骨架和资源规范 (Skeleton & AssetSpecs)
+    2. ImageGenService/AudioGenService -> 资源 (Assets)
+    3. 装配 -> 最终结果
     """
     def __init__(
         self, 
@@ -23,7 +23,7 @@ class PipelineController:
 
     def generate_skeleton(self, context: StandardizedContext, exercise_type: str) -> ExerciseSkeleton:
         """
-        Step 1: Generate text skeleton.
+        步骤 1: 生成文本骨架。
         """
         context_dict = context.model_dump()
         self.logger.info(f"Generating text skeleton for type: {exercise_type}")
@@ -32,11 +32,11 @@ class PipelineController:
 
     def hydrate_assets(self, skeleton: ExerciseSkeleton) -> ExerciseSkeleton:
         """
-        Step 2: Generate and fill assets (Idempotent).
+        步骤 2: 生成并填充资源（幂等）。
         """
         self.logger.info(f"Hydrating {len(skeleton.asset_specs)} assets")
         for spec in skeleton.asset_specs:
-            # Idempotency check
+            # 幂等性检查
             existing_val = self._get_value_at_path(skeleton.items, spec.target_path)
             if existing_val and isinstance(existing_val, str) and existing_val.startswith("http"):
                  self.logger.info(f"Asset {spec.id} already exists, skipping.")
@@ -62,7 +62,7 @@ class PipelineController:
 
     def generate_exercise(self, context: StandardizedContext, exercise_type: str) -> Dict[str, Any]:
         """
-        Orchestrates the full generation pipeline (Legacy Wrapper).
+        编排完整的生成流水线（旧版封装）。
         """
         skeleton = self.generate_skeleton(context, exercise_type)
         self.hydrate_assets(skeleton)
@@ -70,32 +70,32 @@ class PipelineController:
 
     def _parse_skeleton(self, data: Dict[str, Any], exercise_type: str) -> ExerciseSkeleton:
         """
-        Adapt varied LLM outputs into a strict ExerciseSkeleton.
-        Handles legacy schemas by converting them to AssetSpecs.
+        将各种 LLM 输出适配为严格的 ExerciseSkeleton。
+        通过将旧版 schema 转换为 AssetSpecs 来处理它们。
         """
-        # Extract common fields
+        # 提取公共字段
         content = data.get("content", {})
-        # Try to find a reasonable title/instruction
+        # 尝试找到合理的标题/说明
         title = content.get("question") or content.get("statement") or content.get("text") or "Untitled Exercise"
         instructions = "Please complete the exercise." 
         
         items = []
         asset_specs = []
         
-        # Adapter for specific legacy types that imply asset generation
+        # 针对特定旧版类型的适配器，这些类型暗示了资源生成
         if exercise_type == "mcq_image":
-            # Map legacy mcq_image structure to Skeleton
+            # 将旧版 mcq_image 结构映射到 Skeleton
             options = content.get("options", [])
             prompts = data.get("generation", {}).get("options_prompts", [])
             
-            # For MCQ, the "item" is usually the question object itself
+            # 对于 MCQ，"item" 通常是问题对象本身
             items.append(content)
             
-            # Create AssetSpecs for each option
+            # 为每个选项创建 AssetSpecs
             for idx, opt in enumerate(options):
-                # Ensure options have IDs
+                # 确保选项有 ID
                 opt_id = opt.get("id", f"opt_{idx}")
-                # Get prompt from parallel array or fallback
+                # 从并行数组获取 prompt 或使用回退值
                 prompt = prompts[idx] if idx < len(prompts) else f"Illustration for {opt.get('caption', 'option')}"
                 
                 spec = AssetSpec(
@@ -108,10 +108,10 @@ class PipelineController:
                 asset_specs.append(spec)
                 
         else:
-            # Generic handling: Assume the whole content is one item
+            # 通用处理：假设整个内容是一个项目
             items.append(content)
             
-            # If data has 'asset_specs' directly (New Prompt Style)
+            # 如果数据直接包含 'asset_specs' (新提示词风格)
             if "asset_specs" in data:
                 for spec_data in data["asset_specs"]:
                     asset_specs.append(AssetSpec(**spec_data))
@@ -125,14 +125,14 @@ class PipelineController:
 
     def _generate_assets(self, skeleton: ExerciseSkeleton):
         """
-        Process asset_specs and update items in place.
-        Deprecated: Use hydrate_assets instead.
+        处理 asset_specs 并原地更新 items。
+        已弃用：请改用 hydrate_assets。
         """
         self.hydrate_assets(skeleton)
 
     def _get_value_at_path(self, items: List[Dict], path: str) -> Any:
         """
-        Retrieves the value at the specified JSON path.
+        检索指定 JSON 路径处的值。
         """
         try:
             parts = path.split('.')
@@ -168,13 +168,13 @@ class PipelineController:
             return current
             
         except Exception as e:
-            self.logger.error(f"Error reading path {path}: {e}")
+            self.logger.error(f"读取路径 {path} 时出错: {e}")
             return None
 
     def _update_item_at_path(self, items: List[Dict], path: str, value: str):
         """
-        Updates the value at the specified JSON path within the items list.
-        Supported format example: "items[0].options[0].image_url"
+        更新 items 列表中指定 JSON 路径处的值。
+        支持的格式示例："items[0].options[0].image_url"
         """
         try:
             parts = path.split('.')
@@ -182,12 +182,12 @@ class PipelineController:
             
             match = re.match(r"items\[(\d+)\]", root_part)
             if not match:
-                self.logger.warning(f"Path must start with items[i], got: {path}")
+                self.logger.warning(f"路径必须以 items[i] 开头，当前为: {path}")
                 return
             
             idx = int(match.group(1))
             if idx >= len(items):
-                self.logger.warning(f"Index {idx} out of range for items")
+                self.logger.warning(f"索引 {idx} 超出 items 范围")
                 return
             
             current = items[idx]

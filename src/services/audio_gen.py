@@ -40,7 +40,7 @@ class RealAudioGenService:
             
         except Exception as e:
             # 记录错误并重新引发或优雅处理
-            print(f"Error generating audio: {e}")
+            print(f"生成音频时出错: {e}")
             raise e
 
 class MockAudioGenService:
@@ -56,5 +56,5 @@ class MockAudioGenService:
         
         actual_voice = voice_map.get(voice_id, voice_id)
         
-        # Mocking API response
+        # 模拟 API 响应
         return f"https://api.bigmodel.cn/tts/mock-audio-{actual_voice}.mp3"

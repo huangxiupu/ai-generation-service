@@ -2,7 +2,7 @@ from typing import List, Dict, Any, Optional, Literal, Union
 from pydantic import BaseModel, Field
 from .enums import SectionType, BlockType, AssetType, GradeLevel, ExerciseType
 
-# --- Standardized Context Models ---
+# --- 标准化上下文模型 (Standardized Context Models) ---
 
 class MetaInfo(BaseModel):
     book_title: str
@@ -15,18 +15,18 @@ class MetaInfo(BaseModel):
     section_type: SectionType = SectionType.UNKNOWN
 
 class PedagogicalGoals(BaseModel):
-    vocabulary: List[str] = Field(default_factory=list)
-    grammar: List[str] = Field(default_factory=list)
-    phonics: List[str] = Field(default_factory=list)
+    vocabulary: List[str] = Field(default_factory=list, description="词汇目标")
+    grammar: List[str] = Field(default_factory=list, description="语法目标")
+    phonics: List[str] = Field(default_factory=list, description="语音目标")
 
 class Block(BaseModel):
     semantic_type: BlockType
     payload: Dict[str, Any]
 
 class NormalizedContent(BaseModel):
-    summary: str = ""
-    visual_scene: str = ""
-    blocks: List[Block] = Field(default_factory=list)
+    summary: str = Field("", description="内容摘要")
+    visual_scene: str = Field("", description="视觉场景描述")
+    blocks: List[Block] = Field(default_factory=list, description="语义内容块列表")
 
 class StandardizedContext(BaseModel):
     meta: MetaInfo
@@ -36,24 +36,24 @@ class StandardizedContext(BaseModel):
 class ExerciseRecommendation(BaseModel):
     exercise_type: ExerciseType
     reason: str
-    suggested_difficulty: str = "Medium"
+    suggested_difficulty: str = Field("Medium", description="建议难度等级")
 
 class ContextProcessingResult(BaseModel):
     standardized_context: StandardizedContext
     recommendations: List[ExerciseRecommendation] = Field(default_factory=list)
 
-# --- Exercise Generation Models ---
+# --- 练习生成模型 (Exercise Generation Models) ---
 
 class AssetSpec(BaseModel):
     id: str
-    target_path: str  # JSON Path, e.g., "items[0].options[0].image_url"
+    target_path: str  # JSON 路径，例如 "items[0].options[0].image_url"
     type: AssetType
-    prompt: Optional[str] = None  # for Image
-    content: Optional[str] = None # for Audio
-    params: Dict[str, Any] = Field(default_factory=dict)
+    prompt: Optional[str] = None  # 用于图像生成
+    content: Optional[str] = None # 用于音频生成
+    params: Dict[str, Any] = Field(default_factory=dict, description="生成参数")
 
 class ExerciseSkeleton(BaseModel):
     title: str
     instructions: str
     items: List[Dict[str, Any]]
-    asset_specs: List[AssetSpec] = Field(default_factory=list)
+    asset_specs: List[AssetSpec] = Field(default_factory=list, description="待生成资源规范")

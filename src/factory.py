@@ -38,7 +38,7 @@ class ProviderFactory:
 
         if not api_key:
              # 仅作为警告日志可能更好，但我们还没有设置日志记录器。
-             # 我们继续执行，provider 可能会稍后失败，或者依赖环境变量（如果库支持）。
+             # 我们继续执行，Provider 可能会稍后失败，或者依赖环境变量（如果库支持）。
              pass
 
         if provider_type == "openai":
@@ -48,7 +48,7 @@ class ProviderFactory:
         elif provider_type == "modelscope":
             instance = ModelScopeProvider(api_key=api_key, base_url=base_url)
         else:
-            # 其他 provider 类型的扩展点
+            # 其他 Provider 类型的扩展点
             raise ValueError(f"渠道 '{channel_name}' 的提供商类型 '{provider_type}' 未知。")
 
         cls._instances[channel_name] = instance

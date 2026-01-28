@@ -2,45 +2,41 @@ from typing import List, Optional, Union, Dict, Any, Literal
 from pydantic import BaseModel, Field
 from .enums import GradeLevel, DifficultyLevel, ExerciseType
 
-# Base Models for Common Structure
+# 基础模型：通用结构
 
 class BaseGrading(BaseModel):
-    """Base grading structure for all exercises."""
-    explanation: Optional[str] = Field(None, description="Explanation for the correct answer")
+    """所有练习的基础评分结构。"""
+    explanation: Optional[str] = Field(None, description="正确答案的解析")
 
 class BaseGeneration(BaseModel):
-    """Base generation metadata."""
-    grade_levels: Optional[List[str]] = Field(None, description="Target grade levels, e.g., ['1A', '1B']")
-    difficulty: Optional[str] = Field(None, description="Difficulty level")
-    keywords: Optional[List[str]] = Field(None, description="Keywords focused in this exercise")
+    """基础生成元数据。"""
+    grade_levels: Optional[List[str]] = Field(None, description="目标年级，例如 ['1A', '1B']")
+    difficulty: Optional[str] = Field(None, description="难度等级")
+    keywords: Optional[List[str]] = Field(None, description="本练习关注的关键词")
 
 class BaseExerciseContent(BaseModel):
-    """Base content structure with Universal Audio Support (ESL)."""
-    instruction: Optional[str] = Field(None, description="Instruction text for the student")
-    instruction_audio: Optional[str] = Field(None, description="URL for the instruction TTS audio")
-    question: Optional[str] = Field(None, description="Main question text")
-    question_audio: Optional[str] = Field(None, description="URL for the question TTS audio")
-    hints: Optional[List[str]] = Field(None, description="Hints for the student")
+    """具有通用音频支持 (ESL) 的基础内容结构。"""
+    instruction: Optional[str] = Field(None, description="给学生的指令文本")
+    instruction_audio: Optional[str] = Field(None, description="指令文本的 TTS 音频 URL")
+    question: Optional[str] = Field(None, description="主要问题文本")
+    question_audio: Optional[str] = Field(None, description="问题文本的 TTS 音频 URL")
+    hints: Optional[List[str]] = Field(None, description="给学生的提示")
 
-# --- Type A: Text-Only (with Audio Support) ---
+# --- 类型 A：纯文本（支持音频） ---
 
 class MCQTextOption(BaseModel):
     text: str
-    audio_url: Optional[str] = Field(None, description="TTS audio for this option")
+    audio_url: Optional[str] = Field(None, description="该选项的 TTS 音频")
 
 class MCQTextContent(BaseExerciseContent):
-    options: List[str]  # Simplified for text-only, or use MCQTextOption if we want audio per option
-    # Note: To support audio per option in simple text MCQ, we might want a complex object or just rely on main text.
-    # The sample showed simple strings. Let's stick to strings for simple mcq_text options unless specified.
-    # However, ESL expert says "options audio helpful". Let's support both or stick to simple for now and upgrade if needed.
-    # Actually, let's keep options as List[str] to match sample, but maybe add "options_audio" list?
-    # Better: List[Dict] is more flexible. Let's allow options to be objects in a separate type or just upgrade this.
-    # The sample had: "options": ["Red", "Blue"]
-    # Let's keep it simple for mcq_text but add a note.
+    options: List[str]  # 纯文本简化版，如果需要每个选项都有音频，请使用 MCQTextOption
+    # 注意：为了在简单的文本选择题中支持每个选项的音频，我们可能需要复杂的对象或仅依赖主文本。
+    # 示例显示的是简单的字符串。除非另有说明，否则我们在简单的 mcq_text 选项中坚持使用字符串。
+    # 然而，ESL 专家表示“选项音频很有帮助”。我们目前保持简单以匹配示例，但保留扩展可能。
     pass
 
 class MCQTextGrading(BaseGrading):
-    answer_key: int = Field(..., description="0-based index of correct answer")
+    answer_key: int = Field(..., description="正确答案的 0 基索引")
 
 class MCQTextExercise(BaseModel):
     content: MCQTextContent
@@ -50,7 +46,7 @@ class MCQTextExercise(BaseModel):
 
 class TrueFalseContent(BaseExerciseContent):
     statement: str
-    statement_audio: Optional[str] = Field(None, description="TTS audio for the statement")
+    statement_audio: Optional[str] = Field(None, description="陈述句的 TTS 音频")
 
 class TrueFalseGrading(BaseGrading):
     answer_key: bool
@@ -62,8 +58,8 @@ class TrueFalseExercise(BaseModel):
 
 
 class FillInBlanksContent(BaseExerciseContent):
-    text: str = Field(..., description="Text with {{blank}} placeholders")
-    text_audio: Optional[str] = Field(None, description="Audio of the text (with silence/beep for blanks)")
+    text: str = Field(..., description="带有 {{blank}} 占位符的文本")
+    text_audio: Optional[str] = Field(None, description="文本音频（空格处静音或发哔声）")
     original_text: str
     word_bank: Optional[List[str]] = None
 
@@ -85,9 +81,9 @@ class SentenceOrderingContent(BaseExerciseContent):
     scrambled_items: List[SentenceOrderingItem]
 
 class SentenceOrderingGrading(BaseGrading):
-    answer_key: List[str] = Field(..., description="List of item IDs in correct order")
+    answer_key: List[str] = Field(..., description="正确顺序的项目 ID 列表")
     correct_sentence: str
-    correct_audio: Optional[str] = Field(None, description="Audio of the full correct sentence (Reinforcement)")
+    correct_audio: Optional[str] = Field(None, description="完整正确句子的音频（用于强化学习）")
 
 class SentenceOrderingExercise(BaseModel):
     content: SentenceOrderingContent
@@ -104,7 +100,7 @@ class SequenceOrderingContent(BaseExerciseContent):
     items: List[SequenceOrderingItem]
 
 class SequenceOrderingGrading(BaseGrading):
-    answer_key: List[str] = Field(..., description="List of item IDs in correct order")
+    answer_key: List[str] = Field(..., description="正确顺序的项目 ID 列表")
 
 class SequenceOrderingExercise(BaseModel):
     content: SequenceOrderingContent
@@ -117,8 +113,8 @@ class ErrorCorrectionContent(BaseExerciseContent):
     incorrect_audio: Optional[str] = None
 
 class ErrorCorrectionGrading(BaseGrading):
-    answer_key: str = Field(..., description="Corrected sentence")
-    correct_audio: Optional[str] = Field(None, description="Audio of the correct sentence")
+    answer_key: str = Field(..., description="修正后的句子")
+    correct_audio: Optional[str] = Field(None, description="正确句子的音频")
 
 class ErrorCorrectionExercise(BaseModel):
     content: ErrorCorrectionContent
@@ -128,10 +124,10 @@ class ErrorCorrectionExercise(BaseModel):
 
 class TableCompletionContent(BaseExerciseContent):
     headers: List[str]
-    rows: List[List[str]] = Field(..., description="Rows with {{blank}} placeholders")
+    rows: List[List[str]] = Field(..., description="带有 {{blank}} 占位符的行")
 
 class TableCompletionGrading(BaseGrading):
-    answer_key: List[str] = Field(..., description="Answers filling the blanks in row-major order")
+    answer_key: List[str] = Field(..., description="按行优先顺序填充空格的答案")
 
 class TableCompletionExercise(BaseModel):
     content: TableCompletionContent
@@ -140,10 +136,10 @@ class TableCompletionExercise(BaseModel):
 
 
 class ShortAnswerContent(BaseExerciseContent):
-    pass # Uses standard question/question_audio
+    pass # 使用标准 question/question_audio
 
 class ShortAnswerGrading(BaseGrading):
-    answer_key: Dict[str, Any] = Field(..., description="Reference answer and keywords")
+    answer_key: Dict[str, Any] = Field(..., description="参考答案和关键词")
 
 class ShortAnswerExercise(BaseModel):
     content: ShortAnswerContent
@@ -158,7 +154,7 @@ class WritingPromptContent(BaseExerciseContent):
     min_words: Optional[int] = None
 
 class WritingPromptGrading(BaseGrading):
-    answer_key: Dict[str, Any] = Field(..., description="Rubric")
+    answer_key: Dict[str, Any] = Field(..., description="评分标准")
 
 class WritingPromptExercise(BaseModel):
     content: WritingPromptContent
@@ -193,7 +189,7 @@ class CategorizationExercise(BaseModel):
     generation: BaseGeneration
 
 
-# --- Type B: Text + Image (Visual) ---
+# --- 类型 B：文本 + 图像（视觉） ---
 
 class MCQImageOption(BaseModel):
     id: str

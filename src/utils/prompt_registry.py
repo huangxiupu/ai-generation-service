@@ -11,21 +11,21 @@ class PromptRegistry:
         
     def render(self, template_name: str, **kwargs) -> str:
         """
-        Render a template with the given context.
-        template_name: relative path from templates directory (e.g., 'user_prompts/mcq_text.j2')
+        使用给定的上下文渲染模板。
+        template_name: 相对于 templates 目录的路径（例如 'user_prompts/mcq_text.j2'）
         """
         try:
             template = self.env.get_template(template_name)
             return template.render(**kwargs)
         except Exception as e:
-            raise ValueError(f"Error rendering template {template_name}: {str(e)}")
+            raise ValueError(f"渲染模板 {template_name} 时出错: {str(e)}")
 
     def get_system_prompt(self) -> str:
         return self.render("system_prompts/base.j2")
 
     def get_esl_system_prompt(self, **kwargs) -> str:
         """
-        Get the specialized ESL expert system prompt.
-        Requires context with meta.grade_level (e.g. context={'meta': {'grade_level': '1'}})
+        获取专门的 ESL 专家系统提示词。
+        需要包含 meta.grade_level 的上下文（例如 context={'meta': {'grade_level': '1'}}）
         """
         return self.render("system_prompts/esl_expert.j2", **kwargs)

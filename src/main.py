@@ -37,32 +37,30 @@ async def preprocess_section_endpoint(request: PreprocessRequest):
 @app.post("/api/generate_exercise")
 async def generate_exercise_endpoint(request: GenerateExerciseRequest):
     try:
-        # 1. Preprocess / Get Context
-        # Check if preprocessing exists? gateway.preprocess_section updates if exists.
-        # We can just call it to be safe and ensure we have the context object.
+        # 1. 预处理 / 获取上下文
+        # 检查预处理是否存在？gateway.preprocess_section 会在存在时更新。
+        # 我们可以直接调用它以确保安全，并确保我们拥有上下文对象。
         context = gateway.preprocess_section(request.section_id)
         
-        # 2. Resolve Exercise Type ID
-        # We need to query the DB for exercise_types table.
-        # Using gateway.db
+        # 2. 解析练习类型 ID
+        # 我们需要查询数据库中的 exercise_types 表。
+        # 使用 gateway.db
         type_resp = gateway.db.table("exercise_types").select("id").eq("code", request.exercise_type).single().execute()
         if not type_resp.data:
-            # Fallback or Error? 
-            # For integration test, maybe the table is empty?
-            # I will log warning and maybe fail.
-            raise HTTPException(status_code=400, detail=f"Exercise type {request.exercise_type} not found")
+            # 如果未找到练习类型，记录警告并报错
+            raise HTTPException(status_code=400, detail=f"未找到练习类型: {request.exercise_type}")
         
         type_id = type_resp.data['id']
         batch_id = str(uuid.uuid4())
         results = []
 
-        # 3. Loop Generation
+        # 3. 循环生成
         for _ in range(request.exercise_num):
-            # Step 1: Generate Skeleton
+            # 步骤 1: 生成骨架
             try:
                 skeleton = controller.generate_skeleton(context, request.exercise_type)
                 
-                # Insert Initial Record
+                # 插入初始记录
                 record_data = {
                     "section_id": request.section_id,
                     "exercise_type_id": type_id,
@@ -72,40 +70,40 @@ async def generate_exercise_endpoint(request: GenerateExerciseRequest):
                 }
                 insert_resp = gateway.db.table("generated_exercises").insert(record_data).execute()
                 if not insert_resp.data:
-                    raise Exception("Failed to insert initial record")
+                    raise Exception("插入初始记录失败")
                 
                 record_id = insert_resp.data[0]['id']
                 current_record = insert_resp.data[0]
                 
-                # Step 2: Hydrate Assets
+                # 步骤 2: 填充资源
                 try:
                     final_skeleton = controller.hydrate_assets(skeleton)
                     
-                    # Update Record (Success)
+                    # 更新记录 (成功)
                     update_data = {
                         "content": final_skeleton.model_dump(),
                         "status": ExerciseGenerationStatus.PENDING
                     }
-                    # Extract image url if any for top-level preview? 
-                    # The schema has image_url. Maybe first image?
+                    # 如果有顶级预览图，提取图片 URL？
+                    # Schema 中有 image_url。也许是第一张图？
                     if final_skeleton.asset_specs:
-                        # Find first image asset
+                        # 查找第一个图片资源
                         for spec in final_skeleton.asset_specs:
                             if spec.type == "image":
-                                # Extract URL from items using path?
-                                # Or just rely on content.
-                                # Let's skip filling top-level image_url for now unless requested.
+                                # 使用路径从 items 中提取 URL？
+                                # 或者直接依赖内容。
+                                # 除非有要求，否则暂时跳过填充顶级 image_url。
                                 pass
 
                     update_resp = gateway.db.table("generated_exercises").update(update_data).eq("id", record_id).execute()
                     current_record = update_resp.data[0]
                     
                 except Exception as e:
-                    # Update Record (Failed)
-                    print(f"Asset generation failed for {record_id}: {e}")
+                    # 更新记录 (失败)
+                    print(f"资源生成失败 {record_id}: {e}")
                     fail_data = {
                         "status": ExerciseGenerationStatus.GENERATION_FAILED
-                        # content remains skeleton
+                        # 内容保持为骨架
                     }
                     update_resp = gateway.db.table("generated_exercises").update(fail_data).eq("id", record_id).execute()
                     current_record = update_resp.data[0]
@@ -113,11 +111,8 @@ async def generate_exercise_endpoint(request: GenerateExerciseRequest):
                 results.append(current_record)
 
             except Exception as e:
-                print(f"Skeleton generation failed: {e}")
-                # If skeleton fails, we don't insert? Or insert failed record?
-                # If we didn't insert, we can't return a record ID.
-                # Just skip this iteration or return error info?
-                # I'll log and continue.
+                print(f"骨架生成失败: {e}")
+                # 如果骨架生成失败，我们选择跳过此迭代并继续。
                 continue
 
         return results

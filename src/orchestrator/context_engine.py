@@ -15,42 +15,41 @@ except ImportError:
 
 class ContextEngine:
     """
-    The Context Engine is responsible for transforming raw textbook JSON data
-    into a StandardizedContext that is predictable for downstream generation tasks.
+    上下文引擎负责将教材的原始 JSON 数据转换为下游生成任务可预测的 StandardizedContext。
 
-    Architecture Note - SectionType vs BlockType:
+    架构说明 - SectionType 与 BlockType：
     ---------------------------------------------
-    We intentionally decouple `SectionType` (Source Domain) from `BlockType` (Target Domain).
-    - SectionType reflects the pedagogical intent and layout of the textbook (e.g., Vocabulary Scene, Narrative).
-    - BlockType reflects the atomic data structure for AI processing (e.g., Conversation, Vocabulary List).
+    我们刻意将 `SectionType`（源领域）与 `BlockType`（目标领域）解耦。
+    - SectionType 反映了教材的教学意图和布局（例如：词汇场景、叙述）。
+    - BlockType 反映了 AI 处理的原子数据结构（例如：对话、词汇列表）。
     
-    Mapping Strategy:
-    - A single Section (e.g., VOCABULARY_SCENE) is often decomposed into multiple Blocks 
-      (e.g., CONVERSATION + VOCABULARY_LIST + SPATIAL_MAP).
-    - This allows for flexible re-use of atomic structures across different pedagogical contexts.
+    映射策略：
+    - 单个 Section（例如：VOCABULARY_SCENE）通常被分解为多个 Block
+      （例如：CONVERSATION + VOCABULARY_LIST + SPATIAL_MAP）。
+    - 这允许在不同的教学背景下灵活复用原子结构。
     """
     def __init__(self, text_gen_service: Optional[BaseTextGenService] = None):
         self.text_gen_service = text_gen_service
 
     def normalize(self, section_data: Dict[str, Any], book_meta: Dict[str, Any], unit_meta: Dict[str, Any], section_id: Optional[str] = None) -> ContextProcessingResult:
         """
-        Main entry point to normalize raw section data into StandardizedContext and recommend exercises.
+        标准化原始章节数据为 StandardizedContext 并推荐练习的主要入口点。
         
-        Args:
-            section_data: The JSON dict for a specific section.
-            book_meta: The JSON dict for the book metadata.
-            unit_meta: The JSON dict for the unit metadata.
-            section_id: Optional database ID for the section.
+        参数:
+            section_data: 特定章节的 JSON 字典。
+            book_meta: 书籍元数据的 JSON 字典。
+            unit_meta: 单元元数据的 JSON 字典。
+            section_id: 章节的可选数据库 ID。
         """
-        # Level 1: Deterministic Metadata Extraction
+        # 第一层：确定性的元数据提取
         meta = self._extract_meta(section_data, book_meta, unit_meta, section_id)
         
-        # Level 2: Robust Objective Extraction
-        # Objectives are usually at the Unit level
+        # 第二层：鲁棒的目标提取
+        # 教学目标通常在单元层级
         goals = self._extract_objectives(unit_meta.get("learning_objectives", {}))
         
-        # Level 3: Semantic Content Processing & Recommendation
-        # This extracts content into semantic blocks and recommends exercises.
+        # 第三层：语义内容处理与推荐
+        # 这会将内容提取为语义块并推荐练习。
         if self.text_gen_service:
             normalized_content, recommendations = self._process_content_with_llm(section_data, book_meta, unit_meta)
         else:
@@ -81,7 +80,7 @@ class ContextEngine:
         )
 
     def _extract_objectives(self, objectives: Dict[str, Any]) -> PedagogicalGoals:
-        # Robust extraction with default empty lists
+        # 鲁棒提取，默认空列表
         return PedagogicalGoals(
             vocabulary=objectives.get("vocabulary_focus", []),
             grammar=objectives.get("grammar_focus", []),
@@ -90,7 +89,7 @@ class ContextEngine:
 
     def _process_content_with_llm(self, section_data: Dict[str, Any], book_meta: Dict[str, Any], unit_meta: Dict[str, Any]) -> tuple[NormalizedContent, List[ExerciseRecommendation]]:
         """
-        Uses LLM to normalize content and generate recommendations.
+        使用 LLM 标准化内容并生成推荐。
         """
         llm_context = {
             "section_type": section_data.get("section_type"),
@@ -105,11 +104,11 @@ class ContextEngine:
             
             blocks = []
             for b in llm_result.get("blocks", []):
-                # Ensure semantic_type is valid or map/fallback
+                # 确保 semantic_type 有效或进行映射/回退
                 try:
                     blocks.append(Block(semantic_type=b["semantic_type"], payload=b["payload"]))
                 except Exception:
-                    # Fallback for invalid block structure
+                    # 无效块结构的回退
                     blocks.append(Block(semantic_type=BlockType.GENERIC, payload=b))
 
             normalized_content = NormalizedContent(
@@ -133,26 +132,26 @@ class ContextEngine:
 
     def _process_content_heuristic(self, section_data: Dict[str, Any]) -> NormalizedContent:
         """
-        Transforms section content into normalized blocks using heuristics.
+        使用启发式方法将章节内容转换为标准化块。
         """
         raw_content = section_data.get("content", {})
         visual_context = section_data.get("visual_context", "")
         
         blocks = []
         
-        # Heuristic mapping for Level 3 (Simplified for implementation)
+        # 第三层的启发式映射（实现简化版）
         
-        # 1. Conversation / Dialogue
+        # 1. 会话 / 对话
         if "conversation" in raw_content:
             blocks.append(Block(semantic_type=BlockType.CONVERSATION, payload={"turns": raw_content["conversation"]}))
         elif "dialogue" in raw_content:
             blocks.append(Block(semantic_type=BlockType.CONVERSATION, payload={"turns": raw_content["dialogue"]}))
              
-        # 2. Vocabulary List
+        # 2. 词汇列表
         if "vocabulary_items" in raw_content:
             blocks.append(Block(semantic_type=BlockType.VOCABULARY_LIST, payload={"items": raw_content["vocabulary_items"]}))
             
-        # 3. Phonics
+        # 3. 语音 (Phonics)
         if "sound" in raw_content:
             blocks.append(Block(semantic_type=BlockType.PHONICS_RULE, payload={
                 "target_sound": raw_content.get("sound"),
@@ -163,8 +162,8 @@ class ContextEngine:
                 "sounds": raw_content.get("sounds")
             }))
             
-        # 4. Fallback / Generic
-        # If specific structures aren't found, wrap the whole content
+        # 4. 回退 / 通用
+        # 如果未找到特定结构，则包装整个内容
         if not blocks:
             blocks.append(Block(semantic_type=BlockType.GENERIC, payload=raw_content))
 

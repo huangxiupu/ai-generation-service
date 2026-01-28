@@ -18,7 +18,7 @@ class OpenAICompatibleProvider(AIProvider):
                         max_tokens: Optional[int] = None,
                         **kwargs) -> str:
         
-        # 如果需要，过滤掉不支持的 kwargs，或者直接传递
+        # 如果需要，过滤掉不支持的参数，或者直接透传
         response = self.client.chat.completions.create(
             model=model,
             messages=messages,
@@ -39,10 +39,9 @@ class OpenAICompatibleProvider(AIProvider):
         # OpenAI DALL-E 3 支持 'style' ('vivid' 或 'natural')。
         # 如果提供商不支持，我们可能需要过滤它或将其附加到提示词中。
         
-        # 为了兼容性，如果提供了 style 但不在 kwargs 中，如果模型是 dall-e-3，我们尝试传递它
+        # 为了兼容性，如果提供了 style 但不在 kwargs 中，且模型是 dall-e-3，我们尝试传递它；
         # 否则，我们可能将其附加到提示词中。
-        # 目前，如果底层客户端验证支持，我们在 kwargs 中传递它，
-        # 或者依赖调用者将其放入提示词中。
+        # 目前，如果底层客户端验证支持，我们在 kwargs 中传递它，或者依赖调用者将其放入提示词中。
         
         # 标准 OpenAI 图像生成
         params = {
@@ -61,8 +60,8 @@ class OpenAICompatibleProvider(AIProvider):
             return response.data[0].url
         except Exception as e:
             # 回退：某些提供商可能不支持 'style' 或其他参数。
-            # 如果错误提到 'style'，是否在没有它的情况下重试？
-            # 目前，让错误传播或让调用者处理它。
+            # 如果错误提到 'style'，可以考虑在没有它的情况下重试。
+            # 目前直接让错误传播，由调用者处理。
             raise e
 
     def generate_audio(self, 
@@ -80,6 +79,6 @@ class OpenAICompatibleProvider(AIProvider):
             **kwargs
         )
         
-        # OpenAI python 客户端返回一个可以流式传输或读取的响应对象。
-        # .content 给出字节。
+        # OpenAI Python 客户端返回一个可以流式传输或读取的响应对象。
+        # .content 属性返回字节内容。
         return response.content

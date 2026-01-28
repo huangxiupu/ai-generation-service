@@ -25,7 +25,7 @@ def load_yaml_config(file_path):
     yaml.add_constructor('!env', env_var_constructor, yaml.SafeLoader)
 
     with open(file_path, 'r', encoding='utf-8') as f:
-        # 预处理内容，手动替换环境变量（因为 PyYAML 默认不支持隐式标签构造函数用于所有标量）
+        # 预处理内容，手动替换环境变量（因为 PyYAML 默认不支持所有标量的隐式标签构造函数）
         content = f.read()
         def replace_env(match):
             env_name = match.group(1)
@@ -35,7 +35,7 @@ def load_yaml_config(file_path):
         return yaml.safe_load(expanded_content)
 
 class Config:
-    # 路径
+    # 路径配置
     BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
     TEMPLATE_DIR = os.path.join(BASE_DIR, "templates")
     CONFIG_FILE = os.path.join(os.path.dirname(__file__), "ai_config.yaml")
@@ -47,7 +47,7 @@ class Config:
             try:
                 self.yaml_config = load_yaml_config(self.CONFIG_FILE)
             except Exception as e:
-                print(f"Warning: Failed to load ai_config.yaml: {e}")
+                print(f"警告：无法加载 ai_config.yaml: {e}")
         
         # 基础设置
         self.ENABLE_MOCK = os.getenv("ENABLE_MOCK", "False").lower() == "true"
@@ -87,7 +87,7 @@ class Config:
     def MODEL_AUDIO(self):
         return self.ROUTES.get("audio", {}).get("model", "glm-tts")
 
-    # 兼容旧代码的 API Key 属性 (如果需要)
+    # 为了兼容旧代码的 API Key 属性（如果需要）
     @property
     def ZHIPU_API_KEY(self):
         return self.CHANNELS.get("zhipu", {}).get("api_key")
