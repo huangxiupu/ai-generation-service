@@ -5,10 +5,13 @@ from .enums import SectionType, BlockType, AssetType, GradeLevel, ExerciseType
 # --- Standardized Context Models ---
 
 class MetaInfo(BaseModel):
+    book_title: str
+    unit_number: Union[int, str]
+    unit_title: str
     section_id: Optional[str] = None
-    book_id: str
+    section_title: str
+    section_code: str
     grade_level: GradeLevel
-    unit_id: Union[int, str]
     section_type: SectionType = SectionType.UNKNOWN
 
 class PedagogicalGoals(BaseModel):

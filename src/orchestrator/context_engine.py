@@ -70,10 +70,13 @@ class ContextEngine:
 
     def _extract_meta(self, section: Dict[str, Any], book: Dict[str, Any], unit: Dict[str, Any], section_id: Optional[str] = None) -> MetaInfo:
         return MetaInfo(
+            book_title=book.get("title", "unknown"),
+            unit_number=unit.get("unit_number", 0),
+            unit_title=unit.get("title", ""),
             section_id=section_id,
-            book_id=book.get("title", "unknown"), # In real app, might map title to ID
+            section_title=section.get("title", ""),
+            section_code=section.get("section_code", ""),
             grade_level=book.get("grade_level", "unknown"),
-            unit_id=unit.get("unit_id", 0),
             section_type=section.get("section_type", SectionType.UNKNOWN)
         )
 
