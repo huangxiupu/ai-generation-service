@@ -1,10 +1,18 @@
 import json
+from typing import Protocol, Dict, Any, Optional
 from src.config import config
 from src.factory import ProviderFactory
 from src.utils.prompt_registry import PromptRegistry
 from src.utils.validation import SchemaValidator
 from src.utils.error_handling import retry_on_api_error, repair_and_parse_json, JSONParseError
 from src.schemas.exercise_schemas import SCHEMAS
+
+class BaseTextGenService(Protocol):
+    def generate(self, context: dict, exercise_type: str, generation_config: dict = None) -> Dict[str, Any]:
+        ...
+    
+    def normalize_context(self, context: dict) -> Dict[str, Any]:
+        ...
 
 class RealTextGenService:
     def __init__(self):
@@ -54,6 +62,40 @@ class RealTextGenService:
         # 4. 验证 Schema
         self.validator.validate(data, exercise_type)
         
+        return data
+
+    @retry_on_api_error
+    def normalize_context(self, context: dict) -> Dict[str, Any]:
+        """
+        使用 LLM 标准化 Section 内容并生成练习推荐。
+        """
+        model = config.MODEL_TEXT
+        
+        # 1. 准备提示词
+        # 使用基础系统提示词
+        system_prompt = self.prompt_registry.get_system_prompt()
+        
+        # 渲染用户提示词
+        user_prompt_template = "user_prompts/context_normalization.j2"
+        user_prompt = self.prompt_registry.render(user_prompt_template, **context)
+        
+        # 2. 调用 LLM
+        content = self.provider.chat_completion(
+            model=model,
+            messages=[
+                {"role": "system", "content": system_prompt},
+                {"role": "user", "content": user_prompt}
+            ],
+            temperature=0.2, # 使用较低温度以保证确定性
+            timeout=config.API_TIMEOUT
+        )
+        
+        # 3. 解析 JSON
+        try:
+            data = repair_and_parse_json(content)
+        except JSONParseError as e:
+            raise e
+            
         return data
 
 class MockTextGenService:
@@ -133,3 +175,30 @@ class MockTextGenService:
                 "content": {},
                 "grading": {"answer_key": None}
             }
+
+    def normalize_context(self, context: dict) -> Dict[str, Any]:
+        """
+        返回用于测试的模拟标准化数据。
+        """
+        return {
+            "summary": "Mock summary of the section.",
+            "visual_scene": "Mock visual description.",
+            "blocks": [
+                {
+                    "semantic_type": "conversation",
+                    "payload": {
+                        "turns": [
+                            {"speaker": "A", "text": "Hello"},
+                            {"speaker": "B", "text": "Hi there"}
+                        ]
+                    }
+                }
+            ],
+            "recommendations": [
+                {
+                    "exercise_type": "mcq_text",
+                    "reason": "Good for checking understanding of the conversation.",
+                    "suggested_difficulty": "Easy"
+                }
+            ]
+        }

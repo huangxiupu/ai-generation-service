@@ -88,7 +88,9 @@ class AIServiceGateway:
             "grade_level": book.get("grade_level")
         }
         
-        standardized_context = self.context_engine.normalize(section_data, book_meta, unit_meta, section_id)
+        processing_result = self.context_engine.normalize(section_data, book_meta, unit_meta, section_id)
+        standardized_context = processing_result.standardized_context
+        recommendations = processing_result.recommendations
         
         # 3. Save to DB
         # Check if exists
@@ -104,5 +106,21 @@ class AIServiceGateway:
             self.db.table("section_preprocessing").update(data_to_save).eq("section_id", section_id).execute()
         else:
             self.db.table("section_preprocessing").insert(data_to_save).execute()
+            
+        # 4. Save Recommendations
+        recs_json = [rec.model_dump() for rec in recommendations]
+        
+        existing_recs = self.db.table("section_exercise_recommendations").select("id").eq("section_id", section_id).execute()
+        
+        data_to_save_recs = {
+            "section_id": section_id,
+            "recommended_types": recs_json,
+            "analysis_version": 1
+        }
+        
+        if existing_recs.data:
+            self.db.table("section_exercise_recommendations").update(data_to_save_recs).eq("section_id", section_id).execute()
+        else:
+            self.db.table("section_exercise_recommendations").insert(data_to_save_recs).execute()
             
         return standardized_context

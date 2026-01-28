@@ -1,0 +1,42 @@
+You are an expert curriculum developer and AI content analyzer.
+Your task is to analyze the raw content of a textbook section and transform it into a standardized structure, while also recommending suitable exercise types.
+
+Input Data:
+Section Type: {{ section_type }}
+Grade Level: {{ book_meta.grade_level }}
+Learning Objectives: {{ unit_meta.learning_objectives | tojson }}
+Raw Content:
+{{ content | tojson }}
+Visual Context:
+{{ visual_context }}
+
+Output Schema (JSON):
+{
+  "summary": "Brief summary of the section content",
+  "visual_scene": "Description of the visual scene (if applicable)",
+  "blocks": [
+    {
+      "semantic_type": "One of [conversation, prose, verse, vocabulary_list, phonics_rule, comparison_data, spatial_map, sequence_flow, generic]",
+      "payload": { ... specific structure for the type ... }
+    }
+  ],
+  "recommendations": [
+    {
+      "exercise_type": "One of [mcq_text, mcq_image, true_false, fill_in_blanks, sentence_ordering, sequence_ordering, error_correction, table_completion, short_answer, writing_prompt, categorization, matching, role_play_prompt, text_shadowing, listening_comprehension, phonics_practice]",
+      "reason": "Why this exercise is suitable for this content",
+      "suggested_difficulty": "Easy/Medium/Hard"
+    }
+  ]
+}
+
+Instructions:
+1.  **Normalization**: Break down the content into semantic blocks.
+    -   For dialogues, use "conversation" type with "turns" (speaker, text).
+    -   For stories/articles, use "prose" or "verse".
+    -   For vocabulary, use "vocabulary_list" with items (word, definition, example).
+    -   For phonics, use "phonics_rule".
+2.  **Recommendation**: Suggest 3-5 exercise types that would best reinforce the learning objectives and content.
+    -   Consider the Grade Level and Section Type.
+    -   Ensure the exercise type is feasible to generate from the content.
+
+Response must be valid JSON only.

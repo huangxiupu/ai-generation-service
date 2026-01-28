@@ -25,7 +25,18 @@ def test_preprocess_section_flow_real_db(real_gateway):
     db = real_gateway.db
     saved_resp = db.table("section_preprocessing").select("*").eq("section_id", section_id).execute()
     assert len(saved_resp.data) > 0
-    print(f"Successfully verified persistence for section_id: {section_id}")
+    print(f"Successfully verified persistence for section_id: {section_id} in section_preprocessing")
+
+    # 验证推荐题型是否已保存
+    recs_resp = db.table("section_exercise_recommendations").select("*").eq("section_id", section_id).execute()
+    assert len(recs_resp.data) > 0
+    print(f"Successfully verified persistence for section_id: {section_id} in section_exercise_recommendations")
+    
+    # 打印推荐结果概览
+    recs = recs_resp.data[0].get("recommended_types", [])
+    print(f"Found {len(recs)} recommendations.")
+    if recs:
+        print("Sample recommendation:", recs[0])
     
     print("\nPreprocess Real DB Integration Test Passed!")
     print(f"Section ID: {section_id}")

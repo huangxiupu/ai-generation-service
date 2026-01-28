@@ -1,6 +1,6 @@
 from typing import List, Dict, Any, Optional, Literal, Union
 from pydantic import BaseModel, Field
-from .enums import SectionType, BlockType, AssetType, GradeLevel
+from .enums import SectionType, BlockType, AssetType, GradeLevel, ExerciseType
 
 # --- Standardized Context Models ---
 
@@ -29,6 +29,15 @@ class StandardizedContext(BaseModel):
     meta: MetaInfo
     pedagogical_goals: PedagogicalGoals
     normalized_content: NormalizedContent
+
+class ExerciseRecommendation(BaseModel):
+    exercise_type: ExerciseType
+    reason: str
+    suggested_difficulty: str = "Medium"
+
+class ContextProcessingResult(BaseModel):
+    standardized_context: StandardizedContext
+    recommendations: List[ExerciseRecommendation] = Field(default_factory=list)
 
 # --- Exercise Generation Models ---
 
