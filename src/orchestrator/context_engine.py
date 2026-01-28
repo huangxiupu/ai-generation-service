@@ -75,7 +75,7 @@ class ContextEngine:
             section_id=section_id,
             section_title=section.get("title", ""),
             section_code=section.get("section_code", ""),
-            grade_level=book.get("grade_level", "unknown"),
+            grade_level=book.get("grade_level"),
             section_type=section.get("section_type", SectionType.UNKNOWN)
         )
 

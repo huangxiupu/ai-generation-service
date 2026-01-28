@@ -69,17 +69,22 @@ class AIServiceGateway:
         if not book_resp.data:
             raise Exception(f"未找到 ID 为 {unit['book_id']} 的书籍")
         book = book_resp.data
+        if not book.get("grade_level"):
+            raise Exception(f"书籍 {book.get('title')} 缺少必要的年级信息 (grade_level)")
 
         # 2. 标准化处理
         # 构建 ContextEngine 所需的上下文字典
         section_data = {
             "section_type": section.get("type"),
+            "title": section.get("title"),
+            "section_code": section.get("section_code"),
             "content": section.get("content"),
             "visual_context": section.get("visual_context")
         }
         
         unit_meta = {
-            "unit_id": unit.get("unit_number"),
+            "unit_number": unit.get("unit_number"),
+            "title": unit.get("title"),
             "learning_objectives": unit.get("learning_objectives")
         }
         
