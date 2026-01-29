@@ -1,6 +1,7 @@
 import dashscope
 from dashscope.audio.tts_v2 import SpeechSynthesizer
 from ..interfaces import AIProvider
+from ..utils.logger import llm_logger
 from typing import List, Dict, Any, Optional
 
 class AliyunProvider(AIProvider):
@@ -23,6 +24,7 @@ class AliyunProvider(AIProvider):
         """
         使用 DashScope SDK 生成音频。
         """
+        llm_logger.info(f"TTS Request - Model: {model}, Voice: {voice}, Text: {text[:50]}...")
         # 初始化合成器
         synthesizer = SpeechSynthesizer(model=model, voice=voice)
         
@@ -70,6 +72,8 @@ class AliyunProvider(AIProvider):
         try:
             # call 方法返回的是 bytes
             audio = synthesizer.call(text)
+            llm_logger.info(f"TTS Response - Success, Audio Size: {len(audio)} bytes")
             return audio
         except Exception as e:
-             raise Exception(f"阿里云 TTS SDK 错误: {e}")
+            llm_logger.error(f"TTS Call Failed: {str(e)}")
+            raise Exception(f"阿里云 TTS SDK 错误: {e}")

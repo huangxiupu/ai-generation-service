@@ -128,8 +128,16 @@ async def preprocess_section_endpoint(request: PreprocessRequest):
 def process_generation_task(section_id: str, types: List[str], count: int, batch_id: str):
     try:
         print(f"Starting background generation for section {section_id}, types: {types}, count: {count}")
-        # 1. 预处理 / 获取上下文
-        context = gateway.preprocess_section(section_id)
+        
+        # 1. 尝试获取已有的预处理结果，如果没有则运行预处理
+        context = gateway.get_preprocessed_context(section_id)
+        if context:
+            print(f"[Generation] 使用已有的预处理结果: {section_id}")
+        else:
+            print(f"[Generation] 未找到预处理结果，开始运行预处理: {section_id}")
+            context = gateway.preprocess_section(section_id)
+        
+        print(f"[Generation] 上下文准备就绪，开始生成 {len(types)} 种类型的题目...")
         
         # 2. 遍历每个类型
         for ex_type in types:

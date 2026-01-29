@@ -1,6 +1,8 @@
 from openai import OpenAI
 from typing import List, Dict, Any, Optional
+import json
 from ..interfaces import AIProvider
+from ..utils.logger import llm_logger
 
 class OpenAICompatibleProvider(AIProvider):
     """
@@ -18,10 +20,10 @@ class OpenAICompatibleProvider(AIProvider):
                         max_tokens: Optional[int] = None,
                         **kwargs) -> str:
         
-        # 如果需要，过滤掉不支持的参数，或者直接透传
-        print(f"[OpenAICompatible] 调用模型: {model}")
-        print(f"[OpenAICompatible] Base URL: {self.client.base_url}")
-        print(f"[OpenAICompatible] 消息数量: {len(messages)}")
+        # 记录输入日志
+        llm_logger.info(f"LLM Request - Model: {model}")
+        llm_logger.info(f"LLM Request - Messages: {json.dumps(messages, ensure_ascii=False, indent=2)}")
+        
         try:
             response = self.client.chat.completions.create(
                 model=model,
@@ -30,10 +32,12 @@ class OpenAICompatibleProvider(AIProvider):
                 max_tokens=max_tokens,
                 **kwargs
             )
-            print(f"[OpenAICompatible] 成功收到响应")
-            return response.choices[0].message.content
+            content = response.choices[0].message.content
+            # 记录输出日志
+            llm_logger.info(f"LLM Response - Content: {content}")
+            return content
         except Exception as e:
-            print(f"[OpenAICompatible] 调用失败: {str(e)}")
+            llm_logger.error(f"LLM Call Failed: {str(e)}")
             raise e
 
     def generate_image(self, 

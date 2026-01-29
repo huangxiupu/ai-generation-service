@@ -1,7 +1,9 @@
 import time
 import requests
 from typing import Optional, List, Dict, Any
+import json
 from ..interfaces import AIProvider
+from ..utils.logger import llm_logger
 from .openai_compatible import OpenAICompatibleProvider
 
 class ModelScopeProvider(OpenAICompatibleProvider):
@@ -44,7 +46,7 @@ class ModelScopeProvider(OpenAICompatibleProvider):
         # 合并 kwargs
         payload.update(kwargs)
 
-        print(f"[ModelScope] 正在为模型 {model} 提交异步图像生成任务...")
+        llm_logger.info(f"Image Gen Request - Model: {model}, Prompt: {prompt}")
         
         try:
             response = requests.post(submit_url, headers=headers, json=payload, timeout=30)
@@ -57,11 +59,13 @@ class ModelScopeProvider(OpenAICompatibleProvider):
                     error_detail = error_json
                 except:
                     pass
+                llm_logger.error(f"Image Gen Submit Failed: {error_detail}")
                 raise Exception(f"ModelScope 提交失败 (状态码 {response.status_code}): {error_detail}")
                 
             data = response.json()
-            print(f"[ModelScope] 提交响应: {data}")
+            llm_logger.info(f"Image Gen Submit Response: {json.dumps(data, ensure_ascii=False)}")
         except Exception as e:
+            llm_logger.error(f"Image Gen Request Failed: {str(e)}")
             raise Exception(f"ModelScope 异步提交请求失败: {e}")
 
         # 提取任务 ID
@@ -95,13 +99,12 @@ class ModelScopeProvider(OpenAICompatibleProvider):
                     "Content-Type": "application/json",
                     "X-ModelScope-Task-Type": "image_generation"
                 }
-                print(f"[ModelScope] 正在 {task_url} 轮询任务 {task_id}...")
-                print(poll_headers)
+                llm_logger.debug(f"Polling task {task_id} at {task_url}...")
                 poll_resp = requests.get(task_url, headers=poll_headers)
                 poll_resp.raise_for_status()
 
                 if poll_resp.status_code != 200:
-                    print(f"[ModelScope] 轮询失败 (状态码 {poll_resp.status_code})。正在重试...")
+                    llm_logger.warning(f"Polling failed (status {poll_resp.status_code}). Retrying...")
                     time.sleep(poll_interval)
                     continue
 
@@ -116,7 +119,7 @@ class ModelScopeProvider(OpenAICompatibleProvider):
                     status = poll_data.get("status")
                 
                 if status == "SUCCEEDED":
-                    print(f"[ModelScope] 任务成功。")
+                    llm_logger.info(f"Image Gen Task {task_id} Succeeded.")
                     # 提取 URL
                     # 示例说明 data["output_images"][0]
                     # 先尝试 output_images
@@ -151,7 +154,7 @@ class ModelScopeProvider(OpenAICompatibleProvider):
                 
                 elif status == "FAILED":
                       # 任务明确失败，不再重试
-                      print(f"[ModelScope] 任务失败。完整响应: {poll_data}")
+                      llm_logger.error(f"Image Gen Task {task_id} Failed. Response: {poll_data}")
                       message = poll_data.get("message")
                       if not message and "errors" in poll_data:
                           message = poll_data["errors"].get("message")
@@ -161,7 +164,7 @@ class ModelScopeProvider(OpenAICompatibleProvider):
                       # 针对 'task not found' 的特殊处理，这可能是竞争条件？
                       # 如果消息包含 "task not found"，我们将重试一段时间。
                       if "task not found" in str(message).lower():
-                          print(f"[ModelScope] 在 {task_url} 未找到任务。正在重试... (已用时 {time.time() - start_time:.1f}s)")
+                          llm_logger.warning(f"Task not found {task_id}, retrying...")
                           
                           # 如果持续失败，切换 URL？
                           if (time.time() - start_time) > 10:

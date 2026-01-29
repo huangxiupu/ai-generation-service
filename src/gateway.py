@@ -130,3 +130,14 @@ class AIServiceGateway:
             self.db.table("section_exercise_recommendations").insert(data_to_save_recs).execute()
             
         return standardized_context
+
+    def get_preprocessed_context(self, section_id: str):
+        """
+        从数据库获取已有的预处理结果。
+        """
+        from src.schemas.orchestration import StandardizedContext
+        
+        resp = self.db.table("section_preprocessing").select("normalized_context").eq("section_id", section_id).execute()
+        if resp.data and resp.data[0].get("normalized_context"):
+            return StandardizedContext(**resp.data[0]["normalized_context"])
+        return None

@@ -1,6 +1,6 @@
-import logging
 import re
 from typing import Dict, List, Any, Optional
+from src.utils.logger import app_logger
 from ..schemas.orchestration import StandardizedContext, ExerciseSkeleton, AssetSpec
 
 class PipelineController:
@@ -19,14 +19,13 @@ class PipelineController:
         self.text_service = text_service
         self.image_service = image_service
         self.audio_service = audio_service
-        self.logger = logging.getLogger(__name__)
 
     def generate_skeleton(self, context: StandardizedContext, exercise_type: str) -> ExerciseSkeleton:
         """
         步骤 1: 生成文本骨架。
         """
         context_dict = context.model_dump()
-        self.logger.info(f"Generating text skeleton for type: {exercise_type}")
+        app_logger.info(f"Generating text skeleton for type: {exercise_type}")
         generated_data = self.text_service.generate(context_dict, exercise_type)
         return self._parse_skeleton(generated_data, exercise_type)
 
@@ -34,17 +33,17 @@ class PipelineController:
         """
         步骤 2: 生成并填充资源（幂等）。
         """
-        self.logger.info(f"Hydrating {len(skeleton.asset_specs)} assets")
+        app_logger.info(f"Hydrating {len(skeleton.asset_specs)} assets")
         for spec in skeleton.asset_specs:
             # 幂等性检查
             existing_val = self._get_value_at_path(skeleton.items, spec.target_path)
             if existing_val and isinstance(existing_val, str) and existing_val.startswith("http"):
-                 self.logger.info(f"Asset {spec.id} already exists, skipping.")
+                 app_logger.info(f"Asset {spec.id} already exists, skipping.")
                  continue
 
             url = ""
             try:
-                self.logger.info(f"Generating asset {spec.id} ({spec.type})")
+                app_logger.info(f"Generating asset {spec.id} ({spec.type})")
                 if spec.type == "image":
                     if spec.prompt:
                         url = self.image_service.generate(spec.prompt, **spec.params)
@@ -52,7 +51,7 @@ class PipelineController:
                     if spec.content:
                         url = self.audio_service.generate(spec.content, **spec.params)
             except Exception as e:
-                self.logger.error(f"Failed to generate asset {spec.id}: {e}")
+                app_logger.error(f"Failed to generate asset {spec.id}: {e}")
                 continue 
             
             if url:

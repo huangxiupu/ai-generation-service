@@ -20,3 +20,6 @@ static/audio/*
 static/images/*
 !static/audio/.gitkeep
 !static/images/.gitkeep
+
+# log
+logs/*

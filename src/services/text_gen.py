@@ -2,6 +2,7 @@ import json
 from typing import Protocol, Dict, Any, Optional
 from src.config import config
 from src.factory import ProviderFactory
+from src.utils.logger import app_logger
 from src.utils.prompt_registry import PromptRegistry
 from src.utils.validation import SchemaValidator
 from src.utils.error_handling import retry_on_api_error, repair_and_parse_json, JSONParseError
@@ -25,6 +26,7 @@ class RealTextGenService:
         """
         使用 LLM 生成练习题内容。
         """
+        app_logger.info(f"Starting exercise generation for type: {exercise_type}")
         if generation_config is None:
             generation_config = {}
             
@@ -38,7 +40,7 @@ class RealTextGenService:
         context['schema_json'] = schema_json
         
         user_prompt_template = f"user_prompts/{exercise_type}.j2"
-        user_prompt = self.prompt_registry.render(user_prompt_template, **context)
+        user_prompt = self.prompt_registry.render(user_prompt_template, context=context, **context)
         
         # 2. 调用 LLM
         content = self.provider.chat_completion(
@@ -69,6 +71,7 @@ class RealTextGenService:
         """
         使用 LLM 标准化 Section 内容并生成练习推荐。
         """
+        app_logger.info("Starting context normalization")
         model = config.MODEL_TEXT
         
         # 1. 准备提示词
