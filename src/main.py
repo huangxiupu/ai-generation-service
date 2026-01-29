@@ -3,11 +3,72 @@ from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
 from typing import Dict, Any, List, Optional
 import uuid
+import asyncio
+import contextlib
 from src.gateway import AIServiceGateway
 from src.orchestrator.pipeline_controller import PipelineController
 from src.schemas.enums import ExerciseGenerationStatus
 
-app = FastAPI()
+# 定义任务类型
+class Task:
+    def __init__(self, task_type: str, data: dict):
+        self.task_type = task_type
+        self.data = data
+
+# 全局异步队列
+task_queue = asyncio.Queue()
+
+async def task_worker():
+    """
+    异步任务工作协程，从队列中顺序提取任务执行。
+    通过顺序执行（单 Worker）来防止 LLM API 限流。
+    """
+    print("[Worker] 任务工作协程已启动")
+    while True:
+        task = await task_queue.get()
+        try:
+            print(f"[Worker] 开始处理任务: {task.task_type}, 数据: {task.data}")
+            
+            if task.task_type == "preprocess":
+                # 使用 to_thread 运行同步的预处理函数
+                await asyncio.to_thread(process_preprocessing_task, task.data["section_id"])
+            
+            elif task.task_type == "generate":
+                # 使用 to_thread 运行同步的生成函数
+                await asyncio.to_thread(
+                    process_generation_task,
+                    task.data["section_id"],
+                    task.data["types"],
+                    task.data["count"],
+                    task.data["batch_id"]
+                )
+            
+            print(f"[Worker] 任务完成: {task.task_type}")
+            
+            # 任务之间添加微小延时，进一步降低限流风险
+            await asyncio.sleep(0.5)
+            
+        except Exception as e:
+            print(f"[Worker] 处理任务时出错 ({task.task_type}): {e}")
+            import traceback
+            traceback.print_exc()
+        finally:
+            task_queue.task_done()
+
+@contextlib.asynccontextmanager
+async def lifespan(app: FastAPI):
+    # 启动时开启后台 Worker
+    worker_task = asyncio.create_task(task_worker())
+    print("应用启动：Worker 已在后台运行")
+    yield
+    # 关闭时取消 Worker
+    worker_task.cancel()
+    try:
+        await worker_task
+    except asyncio.CancelledError:
+        print("应用关闭：Worker 已取消")
+
+app = FastAPI(lifespan=lifespan)
 
 app.add_middleware(
     CORSMiddleware,
@@ -33,18 +94,33 @@ class GenerateExerciseRequest(BaseModel):
     use_recommendations: bool = False
     exercise_num: int = 1
 
+def process_preprocessing_task(section_id: str):
+    """
+    后台执行预处理任务
+    """
+    try:
+        print(f"[BackgroundTask] 开始预处理章节: {section_id}")
+        gateway.preprocess_section(section_id)
+        print(f"[BackgroundTask] 预处理完成: {section_id}")
+    except Exception as e:
+        print(f"[BackgroundTask] 预处理失败 ({section_id}): {e}")
+        import traceback
+        traceback.print_exc()
+
 @app.post("/api/preprocess")
 async def preprocess_section_endpoint(request: PreprocessRequest):
-    print(f"收到预处理请求: section_id={request.section_id}")
+    print(f"收到预处理请求 (队列化): section_id={request.section_id}")
     try:
-        print(f"正在调用 gateway.preprocess_section...")
-        result = gateway.preprocess_section(
-            request.section_id
-        )
-        print(f"预处理成功: {request.section_id}")
-        return result
+        # 将任务放入异步队列
+        await task_queue.put(Task("preprocess", {"section_id": request.section_id}))
+        
+        return {
+            "status": "accepted", 
+            "message": "预处理任务已加入队列", 
+            "section_id": request.section_id
+        }
     except Exception as e:
-        print(f"预处理失败: {str(e)}")
+        print(f"提交预处理任务失败: {str(e)}")
         import traceback
         traceback.print_exc()
         raise HTTPException(status_code=500, detail=str(e))
@@ -125,7 +201,7 @@ def process_generation_task(section_id: str, types: List[str], count: int, batch
         traceback.print_exc()
 
 @app.post("/api/generate_exercise")
-async def generate_exercise_endpoint(request: GenerateExerciseRequest, background_tasks: BackgroundTasks):
+async def generate_exercise_endpoint(request: GenerateExerciseRequest):
     try:
         target_types = []
         
@@ -134,12 +210,7 @@ async def generate_exercise_endpoint(request: GenerateExerciseRequest, backgroun
             # 从数据库获取推荐
             rec_resp = gateway.db.table("section_exercise_recommendations").select("recommended_types").eq("section_id", request.section_id).single().execute()
             if rec_resp.data and rec_resp.data.get('recommended_types'):
-                # recommended_types 是包含 type_id 的列表
-                # 我们需要将其转换为 codes
-                rec_list = rec_resp.data['recommended_types'] # Assuming list of dicts or objects
-                # 假设结构是 [{"type_id": "...", ...}, ...] 或只是 ID 列表？
-                # 根据 schema.sql: recommended_types jsonb
-                # 我们需要查看它是如何存储的。假设是对象列表。
+                rec_list = rec_resp.data['recommended_types']
                 
                 type_ids = []
                 if isinstance(rec_list, list):
@@ -155,34 +226,25 @@ async def generate_exercise_endpoint(request: GenerateExerciseRequest, backgroun
                     if types_resp.data:
                         target_types = [t['code'] for t in types_resp.data]
         
-        # 如果指定了 explicit types，则合并（或者如果 auto 没找到，则只用 explicit）
-        # 这里策略：如果 explicit 存在，优先使用 explicit。
-        # 如果 use_recommendations 为 True，则追加推荐的。
         if request.exercise_types:
             for t in request.exercise_types:
                 if t not in target_types:
                     target_types.append(t)
-        
-        # 兼容旧请求：如果有 exercise_type 字段（但在新 model 中已移除，但我们可以检查 request body 如果是 dict）
-        # 由于我们更新了 Model，旧字段如果不传会报错吗？
-        # 我们已经移除了 exercise_type 字段。
-        # 为了兼容，如果前端还在传旧字段... 前端是我们控制的，所以我们可以确保前端传新的。
         
         if not target_types:
             raise HTTPException(status_code=400, detail="未指定练习类型，且未找到推荐类型")
             
         batch_id = str(uuid.uuid4())
         
-        # 添加后台任务
-        background_tasks.add_task(
-            process_generation_task, 
-            request.section_id, 
-            target_types, 
-            request.exercise_num, 
-            batch_id
-        )
+        # 将任务放入异步队列
+        await task_queue.put(Task("generate", {
+            "section_id": request.section_id,
+            "types": target_types,
+            "count": request.exercise_num,
+            "batch_id": batch_id
+        }))
         
-        return {"status": "accepted", "batch_id": batch_id, "message": "任务已提交后台处理", "target_types": target_types}
+        return {"status": "accepted", "batch_id": batch_id, "message": "任务已加入队列等待处理", "target_types": target_types}
 
     except HTTPException as he:
         raise he

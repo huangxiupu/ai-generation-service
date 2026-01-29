@@ -64,7 +64,7 @@ providers:
 routes:
   text:
     provider: zhipu
-    model: glm-4.7-flash
+    model: glm-4-flash
 
   image:
     provider: siliconflow

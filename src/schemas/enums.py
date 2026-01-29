@@ -27,6 +27,7 @@ class BlockType(StrEnum):
     COMPARISON_DATA = "comparison_data"    # 对比数据：多维度对比表
     SPATIAL_MAP = "spatial_map"            # 空间/地图：位置关系描述
     SEQUENCE_FLOW = "sequence_flow"        # 顺序流程：时间轴或步骤
+    MATCHING = "matching"                  # 匹配/连线：项目之间的对应关系
     GENERIC = "generic"                    # 通用/其他：未特定结构化的内容
 
 class AssetType(StrEnum):

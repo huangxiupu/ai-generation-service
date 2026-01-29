@@ -1,6 +1,6 @@
 from typing import List, Dict, Any, Optional, Literal, Union
 from pydantic import BaseModel, Field
-from .enums import SectionType, BlockType, AssetType, GradeLevel, ExerciseType
+from .enums import SectionType, BlockType, AssetType, GradeLevel, ExerciseType, DifficultyLevel
 
 # --- 标准化上下文模型 (Standardized Context Models) ---
 
@@ -21,7 +21,7 @@ class PedagogicalGoals(BaseModel):
 
 class Block(BaseModel):
     semantic_type: BlockType
-    payload: Dict[str, Any]
+    payload: Union[Dict[str, Any], List[Any]]
 
 class NormalizedContent(BaseModel):
     summary: str = Field("", description="内容摘要")
@@ -36,7 +36,7 @@ class StandardizedContext(BaseModel):
 class ExerciseRecommendation(BaseModel):
     exercise_type: ExerciseType
     reason: str
-    suggested_difficulty: str = Field("Medium", description="建议难度等级")
+    suggested_difficulty: DifficultyLevel = Field(DifficultyLevel.MEDIUM, description="建议难度等级")
 
 class ContextProcessingResult(BaseModel):
     standardized_context: StandardizedContext
