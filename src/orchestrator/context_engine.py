@@ -5,6 +5,7 @@ from ..schemas.orchestration import (
     NormalizedContent, Block, ContextProcessingResult, ExerciseRecommendation
 )
 from ..schemas.enums import SectionType, BlockType
+from ..utils.logger import app_logger
 
 # Assuming BaseTextGenService is defined in src.services.text_gen
 # If not, we might need to adjust the import or type hint.
@@ -91,7 +92,7 @@ class ContextEngine:
         """
         使用 LLM 标准化内容并生成推荐。
         """
-        print(f"[ContextEngine] 准备 LLM 请求数据...")
+        app_logger.info("Preparing LLM request data for context normalization")
         llm_context = {
             "section_type": section_data.get("section_type"),
             "content": section_data.get("content"),
@@ -99,14 +100,12 @@ class ContextEngine:
             "book_meta": book_meta,
             "unit_meta": unit_meta
         }
-        print(f"[ContextEngine] LLM Input Context:\n{json.dumps(llm_context, ensure_ascii=False, indent=2)}")
         
-        print(f"[ContextEngine] 正在调用 text_gen_service.normalize_context...")
+        app_logger.info("Calling text_gen_service.normalize_context")
         raw_result = self.text_gen_service.normalize_context(llm_context)
-        print(f"[ContextEngine] LLM 返回原始结果:\n{json.dumps(raw_result, ensure_ascii=False, indent=2)}")
         
         # 解析 LLM 返回的 JSON
-        print(f"[ContextEngine] 正在解析 LLM 结果为模型对象...")
+        app_logger.info("Parsing LLM result into model objects")
         
         # 修正：LLM 输出是扁平结构，直接包含 summary/visual_scene/blocks，而不是嵌套在 normalized_content 下
         # 旧逻辑: normalized_content = NormalizedContent(**raw_result.get("normalized_content", {}))

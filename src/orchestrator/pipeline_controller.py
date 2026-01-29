@@ -73,9 +73,9 @@ class PipelineController:
         通过将旧版 schema 转换为 AssetSpecs 来处理它们。
         """
         # 提取公共字段
-        content = data.get("content", {})
-        grading = data.get("grading", {})
-        generation = data.get("generation", {})
+        content = data.get("content") or {}
+        grading = data.get("grading") or {}
+        generation = data.get("generation") or {}
 
         # Ensure difficulty is present (required field)
         if "difficulty" not in generation or not generation["difficulty"]:
@@ -89,9 +89,12 @@ class PipelineController:
         asset_specs = []
         
         # 优先从 generation.asset_specs 获取 (新 Schema 支持)
-        specs_data = generation.get("asset_specs", [])
+        specs_data = generation.get("asset_specs") or []
         # 兼容性：如果根节点有，也合并
-        if "asset_specs" in data:
+        if "asset_specs" in data and data["asset_specs"]:
+            # 如果 specs_data 是 None，上面已经处理过了
+            if not isinstance(specs_data, list):
+                specs_data = []
             specs_data.extend(data["asset_specs"])
             
         for spec_data in specs_data:

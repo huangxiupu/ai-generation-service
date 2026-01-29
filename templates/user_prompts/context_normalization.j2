@@ -16,18 +16,21 @@ Output Schema (JSON):
   "visual_scene": "Description of the visual scene (if applicable)",
   "blocks": [
     {
-      "semantic_type": "One of [conversation, prose, verse, vocabulary_list, phonics_rule, comparison_data, spatial_map, sequence_flow, matching, grammar_structure, generic]",
+      "semantic_type": "One of BlockType values",
       "payload": { ... specific structure for the type ... }
     }
   ],
   "recommendations": [
     {
-      "exercise_type": "One of [mcq_text, mcq_image, true_false, fill_in_blanks, sentence_ordering, sequence_ordering, error_correction, table_completion, short_answer, writing_prompt, categorization, matching, role_play_prompt, text_shadowing, listening_comprehension, phonics_practice]",
+      "exercise_type": "One of ExerciseType values",
       "reason": "Why this exercise is suitable for this content",
-      "suggested_difficulty": "Easy/Medium/Hard"
+      "suggested_difficulty": "One of DifficultyLevel values"
     }
   ]
 }
+
+### ALLOWED ENUM VALUES
+{{ enum_definitions }}
 
 Instructions:
 1.  **Normalization**: Break down the content into semantic blocks.

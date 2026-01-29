@@ -7,6 +7,7 @@ from src.utils.prompt_registry import PromptRegistry
 from src.utils.validation import SchemaValidator
 from src.utils.error_handling import retry_on_api_error, repair_and_parse_json, JSONParseError
 from src.schemas.exercise_schemas import SCHEMAS
+from src.schemas.enums import GradeLevel, DifficultyLevel, AssetType, BlockType, ExerciseType
 
 class BaseTextGenService(Protocol):
     def generate(self, context: dict, exercise_type: str, generation_config: dict = None) -> Dict[str, Any]:
@@ -20,6 +21,18 @@ class RealTextGenService:
         self.provider = ProviderFactory.get_provider(config.CHANNEL_TEXT)
         self.prompt_registry = PromptRegistry()
         self.validator = SchemaValidator()
+
+    def _get_enum_definitions(self) -> str:
+        """
+        获取枚举定义的字符串描述，以便注入到提示词中。
+        """
+        enums = [GradeLevel, DifficultyLevel, AssetType, BlockType, ExerciseType]
+        lines = []
+        for enum_cls in enums:
+            name = enum_cls.__name__
+            values = [f"'{v.value}'" for v in enum_cls]
+            lines.append(f"- {name}: {', '.join(values)}")
+        return "\n".join(lines)
 
     @retry_on_api_error
     def generate(self, context: dict, exercise_type: str, generation_config: dict = None):
@@ -36,8 +49,9 @@ class RealTextGenService:
         system_prompt = self.prompt_registry.get_system_prompt()
         
         # 将 schema 注入到用户 prompt 上下文中
-        schema_json = json.dumps(SCHEMAS.get(exercise_type, {}), indent=2)
+        schema_json = json.dumps(SCHEMAS.get(exercise_type, {}), indent=2, ensure_ascii=False)
         context['schema_json'] = schema_json
+        context['enum_definitions'] = self._get_enum_definitions()
         
         user_prompt_template = f"user_prompts/{exercise_type}.j2"
         user_prompt = self.prompt_registry.render(user_prompt_template, context=context, **context)
@@ -80,6 +94,7 @@ class RealTextGenService:
         
         # 渲染用户提示词
         user_prompt_template = "user_prompts/context_normalization.j2"
+        context['enum_definitions'] = self._get_enum_definitions()
         user_prompt = self.prompt_registry.render(user_prompt_template, **context)
         
         # 2. 调用 LLM

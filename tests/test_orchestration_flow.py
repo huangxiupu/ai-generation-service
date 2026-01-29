@@ -46,7 +46,8 @@ class TestOrchestrationFlow(unittest.TestCase):
 
         # 2. Normalize Context
         print("\n--- Step 1: Normalizing Context ---")
-        context = self.context_engine.normalize(section_data, book_meta, unit_meta)
+        processing_result = self.context_engine.normalize(section_data, book_meta, unit_meta)
+        context = processing_result.standardized_context
         print(f"Normalized Context: {context.model_dump_json(indent=2)}")
         
         self.assertEqual(context.meta.grade_level, "1A")

@@ -6,7 +6,7 @@ class PromptRegistry:
     def __init__(self):
         self.env = Environment(
             loader=FileSystemLoader(config.TEMPLATE_DIR),
-            autoescape=select_autoescape(['html', 'xml', 'j2'])
+            autoescape=False
         )
         
     def render(self, template_name: str, **kwargs) -> str:

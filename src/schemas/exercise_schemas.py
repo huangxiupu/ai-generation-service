@@ -1,6 +1,6 @@
 from typing import List, Optional, Union, Dict, Any, Literal
 from pydantic import BaseModel, Field
-from .enums import GradeLevel, DifficultyLevel, ExerciseType
+from .enums import GradeLevel, DifficultyLevel, ExerciseType, AssetType
 
 # 基础模型：通用结构
 
@@ -8,7 +8,7 @@ class AssetSpec(BaseModel):
     """资源生成规格定义"""
     id: str
     target_path: str = Field(..., description="JSON path to inject the asset URL")
-    type: Literal["image", "audio", "video"]
+    type: AssetType
     prompt: Optional[str] = Field(None, description="Image generation prompt")
     content: Optional[str] = Field(None, description="Text content for TTS or audio generation")
     params: Optional[Dict[str, Any]] = Field(None, description="Additional parameters")
@@ -19,8 +19,8 @@ class BaseGrading(BaseModel):
 
 class BaseGeneration(BaseModel):
     """基础生成元数据。"""
-    grade_levels: Optional[List[str]] = Field(None, description="目标年级，例如 ['1A', '1B']")
-    difficulty: str = Field(..., description="难度等级")
+    grade_levels: Optional[List[GradeLevel]] = Field(None, description="目标年级，例如 ['1A', '1B']")
+    difficulty: DifficultyLevel = Field(..., description="难度等级")
     keywords: Optional[List[str]] = Field(None, description="本练习关注的关键词")
     asset_specs: Optional[List[AssetSpec]] = Field(None, description="资源生成规格列表")
 

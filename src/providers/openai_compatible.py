@@ -2,7 +2,7 @@ from openai import OpenAI
 from typing import List, Dict, Any, Optional
 import json
 from ..interfaces import AIProvider
-from ..utils.logger import llm_logger
+from ..utils.logger import llm_logger, format_llm_request, format_llm_response
 
 class OpenAICompatibleProvider(AIProvider):
     """
@@ -21,8 +21,7 @@ class OpenAICompatibleProvider(AIProvider):
                         **kwargs) -> str:
         
         # 记录输入日志
-        llm_logger.info(f"LLM Request - Model: {model}")
-        llm_logger.info(f"LLM Request - Messages: {json.dumps(messages, ensure_ascii=False, indent=2)}")
+        llm_logger.info(format_llm_request(model, messages))
         
         try:
             response = self.client.chat.completions.create(
@@ -34,7 +33,7 @@ class OpenAICompatibleProvider(AIProvider):
             )
             content = response.choices[0].message.content
             # 记录输出日志
-            llm_logger.info(f"LLM Response - Content: {content}")
+            llm_logger.info(format_llm_response(content))
             return content
         except Exception as e:
             llm_logger.error(f"LLM Call Failed: {str(e)}")
