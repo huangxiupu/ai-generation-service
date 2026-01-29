@@ -16,7 +16,7 @@ Output Schema (JSON):
   "visual_scene": "Description of the visual scene (if applicable)",
   "blocks": [
     {
-      "semantic_type": "One of [conversation, prose, verse, vocabulary_list, phonics_rule, comparison_data, spatial_map, sequence_flow, matching, generic]",
+      "semantic_type": "One of [conversation, prose, verse, vocabulary_list, phonics_rule, comparison_data, spatial_map, sequence_flow, matching, grammar_structure, generic]",
       "payload": { ... specific structure for the type ... }
     }
   ],
@@ -36,6 +36,7 @@ Instructions:
     -   For stories/articles, use "prose" or "verse".
     -   For vocabulary, use "vocabulary_list" with items (word, definition, example).
     -   For phonics, use "phonics_rule".
+    -   For grammar rules or sentence patterns, use "grammar_structure".
 2.  **Recommendation**: Suggest 3-5 exercise types that would best reinforce the learning objectives and content.
     -   Consider the Grade Level and Section Type.
     -   Ensure the exercise type is feasible to generate from the content.
