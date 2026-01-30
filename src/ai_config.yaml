@@ -60,11 +60,21 @@ providers:
       male: speech_tts/v1
       female: speech_tts/v1
 
+  nvidia:
+    type: nvidia
+    base_url: https://integrate.api.nvidia.com/v1
+    api_key: ${NVIDIA_API_KEY}
+    # NVIDIA NIM (Kimi K2.5 等)
+    voice_map:
+      narrator: alloy
+      male: echo
+      female: shimmer
+
 # 路由配置：定义不同能力使用的提供商和模型
 routes:
   text:
-    provider: zhipu
-    model: glm-4.7-flash
+    provider: nvidia
+    model: moonshotai/kimi-k2.5
 
   image:
     provider: siliconflow

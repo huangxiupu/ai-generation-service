@@ -4,6 +4,7 @@ from src.interfaces import AIProvider
 from src.providers.openai_compatible import OpenAICompatibleProvider
 from src.providers.aliyun_provider import AliyunProvider
 from src.providers.modelscope_provider import ModelScopeProvider
+from src.providers.nvidia_provider import NvidiaProvider
 
 class ProviderFactory:
     """
@@ -47,6 +48,8 @@ class ProviderFactory:
             instance = AliyunProvider(api_key=api_key)
         elif provider_type == "modelscope":
             instance = ModelScopeProvider(api_key=api_key, base_url=base_url)
+        elif provider_type == "nvidia":
+            instance = NvidiaProvider(api_key=api_key, base_url=base_url)
         else:
             # 其他 Provider 类型的扩展点
             raise ValueError(f"渠道 '{channel_name}' 的提供商类型 '{provider_type}' 未知。")
