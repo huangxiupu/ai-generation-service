@@ -34,12 +34,15 @@ class BaseExerciseContent(BaseModel):
 
 # --- 类型 A：纯文本（支持音频） ---
 
+
+# --- 类型 A：纯文本（支持音频） ---
+
 class MCQTextOption(BaseModel):
     text: str
     audio_url: Optional[str] = Field(None, description="该选项的 TTS 音频")
 
 class MCQTextContent(BaseExerciseContent):
-    options: List[Union[str, MCQTextOption]]  # 支持纯文本或带有音频的对象
+    options: List[MCQTextOption]
     pass
 
 class MCQTextGrading(BaseGrading):
@@ -145,8 +148,12 @@ class TableCompletionExercise(BaseModel):
 class ShortAnswerContent(BaseExerciseContent):
     pass # 使用标准 question/question_audio
 
+class ShortAnswerKey(BaseModel):
+    keywords: List[str]
+    model_answer: str
+
 class ShortAnswerGrading(BaseGrading):
-    answer_key: Dict[str, Any] = Field(..., description="参考答案和关键词")
+    answer_key: ShortAnswerKey = Field(..., description="参考答案和关键词")
 
 class ShortAnswerExercise(BaseModel):
     content: ShortAnswerContent
@@ -160,8 +167,11 @@ class WritingPromptContent(BaseExerciseContent):
     prompt_audio: Optional[str] = None
     min_words: Optional[int] = None
 
+class WritingPromptKey(BaseModel):
+    criteria: List[str]
+
 class WritingPromptGrading(BaseGrading):
-    answer_key: Dict[str, Any] = Field(..., description="评分标准")
+    answer_key: WritingPromptKey = Field(..., description="评分标准")
 
 class WritingPromptExercise(BaseModel):
     content: WritingPromptContent
@@ -254,8 +264,11 @@ class RolePlayContent(BaseExerciseContent):
     task: str
     useful_expressions: Optional[List[str]] = None
 
+class RolePlayKey(BaseModel):
+    criteria: List[str]
+
 class RolePlayGrading(BaseGrading):
-    answer_key: Dict[str, Any] # Rubric
+    answer_key: RolePlayKey
 
 class RolePlayExercise(BaseModel):
     content: RolePlayContent

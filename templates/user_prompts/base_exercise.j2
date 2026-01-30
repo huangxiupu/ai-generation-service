@@ -50,7 +50,7 @@ If the exercise requires images or audio (e.g., for options, questions):
      "asset_specs": [
        {
          "id": "unique_id",
-         "target_path": "items[0].options[0].image_url",
+         "target_path": "content.options[0].image_url",
          "type": "image",
          "prompt": "A red apple",
          "params": {}
@@ -58,6 +58,7 @@ If the exercise requires images or audio (e.g., for options, questions):
      ]
    }
    ```
+   *Note: Adjust `target_path` based on the exercise type (e.g., `content.left_items[0].image_url` for Matching).*
 
 ### ALLOWED ENUM VALUES
 {{ enum_definitions }}
