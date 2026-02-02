@@ -1,3 +1,4 @@
+import requests
 from openai import OpenAI
 from typing import List, Dict, Any, Optional
 import json
@@ -11,7 +12,40 @@ class OpenAICompatibleProvider(AIProvider):
     """
     
     def __init__(self, api_key: str, base_url: str):
-        self.client = OpenAI(api_key=api_key, base_url=base_url)
+        self.api_key = api_key
+        self.base_url = base_url
+        # 检查是否为 Antigravity 代理，如果是则使用 requests 以避免 httpx 的 502 兼容性问题
+        self.use_requests_fallback = "127.0.0.1:8045" in base_url
+        
+        if not self.use_requests_fallback:
+            self.client = OpenAI(api_key=api_key, base_url=base_url)
+        else:
+            llm_logger.info(f"检测到 Antigravity 代理 ({base_url})，启用 requests 回退模式以避免 502 错误。")
+
+    def _chat_completion_via_requests(self, 
+                                     model: str, 
+                                     messages: List[Dict[str, str]], 
+                                     temperature: float = 1.0, 
+                                     max_tokens: Optional[int] = None,
+                                     **kwargs) -> str:
+        headers = {
+            "Authorization": f"Bearer {self.api_key}",
+            "Content-Type": "application/json"
+        }
+        payload = {
+            "model": model,
+            "messages": messages,
+            "temperature": temperature,
+            **kwargs
+        }
+        if max_tokens:
+            payload["max_tokens"] = max_tokens
+            
+        url = f"{self.base_url.rstrip('/')}/chat/completions"
+        response = requests.post(url, headers=headers, json=payload, timeout=60)
+        response.raise_for_status()
+        data = response.json()
+        return data["choices"][0]["message"]["content"]
 
     def chat_completion(self, 
                         model: str, 
@@ -24,14 +58,24 @@ class OpenAICompatibleProvider(AIProvider):
         llm_logger.info(format_llm_request(model, messages))
         
         try:
-            response = self.client.chat.completions.create(
-                model=model,
-                messages=messages,
-                temperature=temperature,
-                max_tokens=max_tokens,
-                **kwargs
-            )
-            content = response.choices[0].message.content
+            if self.use_requests_fallback:
+                content = self._chat_completion_via_requests(
+                    model=model,
+                    messages=messages,
+                    temperature=temperature,
+                    max_tokens=max_tokens,
+                    **kwargs
+                )
+            else:
+                response = self.client.chat.completions.create(
+                    model=model,
+                    messages=messages,
+                    temperature=temperature,
+                    max_tokens=max_tokens,
+                    **kwargs
+                )
+                content = response.choices[0].message.content
+                
             # 记录输出日志
             llm_logger.info(format_llm_response(content))
             return content
@@ -46,14 +90,10 @@ class OpenAICompatibleProvider(AIProvider):
                        style: Optional[str] = None,
                        **kwargs) -> str:
         
-        # 注意：'style' 参数可能并非所有提供商都支持，或者映射到不同的字段。
-        # OpenAI DALL-E 3 支持 'style' ('vivid' 或 'natural')。
-        # 如果提供商不支持，我们可能需要过滤它或将其附加到提示词中。
-        
-        # 为了兼容性，如果提供了 style 但不在 kwargs 中，且模型是 dall-e-3，我们尝试传递它；
-        # 否则，我们可能将其附加到提示词中。
-        # 目前，如果底层客户端验证支持，我们在 kwargs 中传递它，或者依赖调用者将其放入提示词中。
-        
+        if self.use_requests_fallback:
+            # Antigravity 目前可能不支持图像生成，如果需要可以实现类似逻辑
+            raise NotImplementedError("Antigravity 代理模式暂不支持图像生成。")
+
         # 标准 OpenAI 图像生成
         params = {
             "model": model,
@@ -70,9 +110,6 @@ class OpenAICompatibleProvider(AIProvider):
             response = self.client.images.generate(**params)
             return response.data[0].url
         except Exception as e:
-            # 回退：某些提供商可能不支持 'style' 或其他参数。
-            # 如果错误提到 'style'，可以考虑在没有它的情况下重试。
-            # 目前直接让错误传播，由调用者处理。
             raise e
 
     def generate_audio(self, 
@@ -82,6 +119,10 @@ class OpenAICompatibleProvider(AIProvider):
                        speed: float = 1.0, 
                        **kwargs) -> bytes:
         
+        if self.use_requests_fallback:
+            # Antigravity 目前可能不支持音频生成
+            raise NotImplementedError("Antigravity 代理模式暂不支持音频生成。")
+
         response = self.client.audio.speech.create(
             model=model,
             voice=voice,
@@ -90,6 +131,4 @@ class OpenAICompatibleProvider(AIProvider):
             **kwargs
         )
         
-        # OpenAI Python 客户端返回一个可以流式传输或读取的响应对象。
-        # .content 属性返回字节内容。
         return response.content

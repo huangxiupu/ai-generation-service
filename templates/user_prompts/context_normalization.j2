@@ -13,7 +13,7 @@ Visual Context:
 Output Schema (JSON):
 {
   "summary": "Brief summary of the section content (Must be non-empty)",
-  "visual_scene": "Description of the visual scene (if applicable)",
+  "visual_scene": "Descriptive summary of the visual context to aid comprehension (if applicable)",
   "blocks": [
     {
       "semantic_type": "One of BlockType values",
@@ -23,7 +23,7 @@ Output Schema (JSON):
   "recommendations": [
     {
       "exercise_type": "One of ExerciseType values",
-      "reason": "Why this exercise is suitable for this content",
+      "reason": "Specific reason linking the exercise to a content block in this section",
       "suggested_difficulty": "One of DifficultyLevel values"
     }
   ]
@@ -35,13 +35,17 @@ Output Schema (JSON):
 Instructions:
 1.  **Normalization**: Break down the content into semantic blocks.
     -   **CRITICAL**: If the Raw Content contains any text, you MUST extract at least one block. Do not return an empty blocks array.
-    -   For dialogues, use "conversation" type with "turns" (speaker, text).
-    -   For stories/articles, use "prose" or "verse".
-    -   For vocabulary, use "vocabulary_list" with items (word, definition, example).
-    -   For phonics, use "phonics_rule".
-    -   For grammar rules or sentence patterns, use "grammar_structure".
-2.  **Recommendation**: Suggest 3-5 exercise types that would best reinforce the learning objectives and content.
-    -   Consider the Grade Level and Section Type.
-    -   Ensure the exercise type is feasible to generate from the content.
+    -   **Visual Context**: Use the provided `Visual Context` to understand the setting and characters. The output `visual_scene` should be a descriptive summary of the visual elements present in the section.
+    -   **Payload Structures**:
+        -   For dialogues, use `conversation` type with `payload: { "turns": [{ "speaker": "Name", "text": "..." }] }`.
+        -   For vocabulary, use `vocabulary_list` type with `payload: { "items": [{ "word": "...", "definition": "...", "example": "..." }] }`.
+        -   For stories/articles, use `prose` or `verse`.
+        -   For phonics, use `phonics_rule` with `payload: { "target_sound": "...", "words": [...] }`.
+        -   For grammar, use `grammar_structure`.
+
+2.  **Recommendation**: Suggest 3-5 exercise types that would best reinforce the content of THIS SECTION.
+    -   **SCOPE CONSTRAINT**: Recommendations must be strictly based on the content present in THIS SECTION. Do NOT recommend exercises for Unit Learning Objectives that are not covered in this specific section.
+    -   **Feasibility**: Ensure the exercise type is feasible to generate from the extracted content blocks.
+    -   **Alignment**: Consider the Grade Level and Section Type.
 
 Response must be valid JSON only.

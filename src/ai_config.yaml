@@ -70,11 +70,21 @@ providers:
       male: echo
       female: shimmer
 
+  gemini:
+    type: gemini
+    base_url: http://127.0.0.1:8045/v1
+    api_key: ${GEMINI_API_KEY}
+    # Gemini OpenAI 兼容层目前不支持语音，保留占位符
+    voice_map:
+      narrator: alloy
+      male: echo
+      female: shimmer
+
 # 路由配置：定义不同能力使用的提供商和模型
 routes:
   text:
-    provider: nvidia
-    model: moonshotai/kimi-k2.5
+    provider: gemini
+    model: gemini-3-pro-high
 
   image:
     provider: siliconflow
