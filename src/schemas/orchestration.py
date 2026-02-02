@@ -46,16 +46,13 @@ class ContextProcessingResult(BaseModel):
 
 class AssetSpec(BaseModel):
     id: str
-    target_path: str  # JSON 路径，例如 "items[0].options[0].image_url"
+    target_path: str  # JSON 路径，例如 "content.options[0].image_url"
     type: AssetType
     prompt: Optional[str] = None  # 用于图像生成
     content: Optional[str] = None # 用于音频生成
     params: Dict[str, Any] = Field(default_factory=dict, description="生成参数")
 
 class ExerciseSkeleton(BaseModel):
-    title: str
-    instructions: str
-    items: List[Dict[str, Any]]
+    content: Dict[str, Any]
     grading: Optional[Dict[str, Any]] = None
     generation: Optional[Dict[str, Any]] = None
-    asset_specs: List[AssetSpec] = Field(default_factory=list, description="待生成资源规范")

@@ -36,17 +36,48 @@ class PipelineController:
         """
         步骤 2: 生成并填充资源（幂等）。
         """
-        app_logger.info(f"Hydrating {len(skeleton.asset_specs)} assets")
-        for spec in skeleton.asset_specs:
-            # 幂等性检查
-            existing_val = self._get_value_at_path(skeleton.items, spec.target_path)
+        specs_data = (skeleton.generation or {}).get("asset_specs", [])
+        asset_specs = []
+        for spec_data in specs_data:
+            try:
+                if isinstance(spec_data, dict):
+                    asset_specs.append(AssetSpec(**spec_data))
+                else:
+                    asset_specs.append(spec_data)
+            except Exception as e:
+                app_logger.warning(f"Invalid asset spec in hydration: {e}")
+
+        app_logger.info(f"Hydrating {len(asset_specs)} assets")
+        for spec in asset_specs:
+            # Determine root dictionary based on path prefix
+            root_dict = None
+            sub_path = spec.target_path
+            
+            if spec.target_path.startswith("content."):
+                root_dict = skeleton.content
+                sub_path = spec.target_path[8:] # len("content.")
+            elif spec.target_path.startswith("items[0]."): # Backward compatibility
+                root_dict = skeleton.content
+                sub_path = spec.target_path[9:] # len("items[0].")
+            
+            if root_dict is None:
+                app_logger.warning(f"Unsupported path root in {spec.target_path}. Skipping.")
+                continue
+
+            # Strict Validation: Check if path exists
+            if not self._check_path_exists(root_dict, sub_path):
+                app_logger.error(f"Target path '{sub_path}' not found in structure. Skipping asset {spec.id}.")
+                continue
+
+            # Idempotency check
+            existing_val = self._get_value_at_path(root_dict, sub_path)
             if existing_val and isinstance(existing_val, str) and existing_val.startswith("http"):
                  app_logger.info(f"Asset {spec.id} already exists, skipping.")
                  continue
 
             url = ""
             try:
-                app_logger.info(f"Generating asset {spec.id} ({spec.type})")
+                app_logger.info(f"Generating asset {spec.id} ({spec.type}) for path {spec.target_path}")
                 if spec.type == "image":
                     if spec.prompt:
                         url = self.image_service.generate(spec.prompt, **spec.params)
@@ -58,7 +89,7 @@ class PipelineController:
                 continue 
             
             if url:
-                self._update_item_at_path(skeleton.items, spec.target_path, url)
+                self._update_value_at_path(root_dict, sub_path, url)
         
         return skeleton
 
@@ -73,46 +104,39 @@ class PipelineController:
     def _parse_skeleton(self, data: Dict[str, Any], exercise_type: str) -> ExerciseSkeleton:
         """
         将各种 LLM 输出适配为严格的 ExerciseSkeleton。
-        通过将旧版 schema 转换为 AssetSpecs 来处理它们。
         """
         # 提取公共字段
         content = data.get("content") or {}
         grading = data.get("grading") or {}
         generation = data.get("generation") or {}
 
+        # 注入题型字段到 content
+        content["type"] = exercise_type
+
         # Ensure difficulty is present (required field)
         if "difficulty" not in generation or not generation["difficulty"]:
             generation["difficulty"] = data.get("difficulty", "Medium")
 
-        # 尝试找到合理的标题/说明
-        title = content.get("question") or content.get("statement") or content.get("text") or "Untitled Exercise"
-        instructions = "Please complete the exercise." 
-        
-        items = [content]
-        asset_specs = []
-        
-        # 优先从 generation.asset_specs 获取 (新 Schema 支持)
+        # 统一资源规范到 generation.asset_specs
         specs_data = generation.get("asset_specs") or []
-        # 兼容性：如果根节点有，也合并
-        if "asset_specs" in data and data["asset_specs"]:
-            # 如果 specs_data 是 None，上面已经处理过了
-            if not isinstance(specs_data, list):
-                specs_data = []
-            specs_data.extend(data["asset_specs"])
+        if not isinstance(specs_data, list):
+            specs_data = []
             
-        for spec_data in specs_data:
-            try:
-                asset_specs.append(AssetSpec(**spec_data))
-            except Exception as e:
-                self.logger.warning(f"Invalid asset spec: {e}")
+        # 兼容性：如果根节点有，也合并
+        if "asset_specs" in data and isinstance(data["asset_specs"], list):
+            # 避免重复
+            existing_ids = {s.get("id") if isinstance(s, dict) else getattr(s, "id", None) for s in specs_data}
+            for spec in data["asset_specs"]:
+                spec_id = spec.get("id") if isinstance(spec, dict) else getattr(spec, "id", None)
+                if spec_id not in existing_ids:
+                    specs_data.append(spec)
+        
+        generation["asset_specs"] = specs_data
                     
         return ExerciseSkeleton(
-            title=title,
-            instructions=instructions,
-            items=items,
+            content=content,
             grading=grading,
-            generation=generation,
-            asset_specs=asset_specs
+            generation=generation
         )
 
     def _generate_assets(self, skeleton: ExerciseSkeleton):
@@ -122,25 +146,42 @@ class PipelineController:
         """
         self.hydrate_assets(skeleton)
 
-    def _get_value_at_path(self, items: List[Dict], path: str) -> Any:
+    def _check_path_exists(self, root: Dict, path: str) -> bool:
+        """
+        检查路径是否存在（Strict Validation）。
+        """
+        try:
+            current = root
+            parts = path.split('.')
+            
+            for part in parts:
+                list_match = re.match(r"(\w+)\[(\d+)\]", part)
+                if list_match:
+                    key = list_match.group(1)
+                    idx = int(list_match.group(2))
+                    
+                    if key not in current:
+                        return False
+                    if not isinstance(current[key], list) or idx >= len(current[key]):
+                        return False
+                    current = current[key][idx]
+                else:
+                    if part not in current:
+                        return False
+                    current = current[part]
+            return True
+        except Exception:
+            return False
+
+    def _get_value_at_path(self, root: Dict, path: str) -> Any:
         """
         检索指定 JSON 路径处的值。
         """
         try:
+            current = root
             parts = path.split('.')
-            root_part = parts[0]
             
-            match = re.match(r"items\[(\d+)\]", root_part)
-            if not match:
-                return None
-            
-            idx = int(match.group(1))
-            if idx >= len(items):
-                return None
-            
-            current = items[idx]
-            
-            for part in parts[1:]:
+            for part in parts:
                 list_match = re.match(r"(\w+)\[(\d+)\]", part)
                 if list_match:
                     key = list_match.group(1)
@@ -150,7 +191,6 @@ class PipelineController:
                         return None
                     if not isinstance(current[key], list) or idx >= len(current[key]):
                         return None
-                    
                     current = current[key][idx]
                 else:
                     if part not in current:
@@ -160,32 +200,20 @@ class PipelineController:
             return current
             
         except Exception as e:
-            self.logger.error(f"读取路径 {path} 时出错: {e}")
+            app_logger.error(f"读取路径 {path} 时出错: {e}")
             return None
 
-    def _update_item_at_path(self, items: List[Dict], path: str, value: str):
+    def _update_value_at_path(self, root: Dict, path: str, value: str):
         """
-        更新 items 列表中指定 JSON 路径处的值。
-        支持的格式示例："items[0].options[0].image_url"
+        更新 root 字典中指定 JSON 路径处的值。
+        路径必须已存在 (Strict Mode)。
         """
         try:
             parts = path.split('.')
-            root_part = parts[0]
+            current = root
             
-            match = re.match(r"items\[(\d+)\]", root_part)
-            if not match:
-                self.logger.warning(f"路径必须以 items[i] 开头，当前为: {path}")
-                return
-            
-            idx = int(match.group(1))
-            if idx >= len(items):
-                self.logger.warning(f"索引 {idx} 超出 items 范围")
-                return
-            
-            current = items[idx]
-            
-            for i, part in enumerate(parts[1:]):
-                is_last = (i == len(parts) - 2)
+            for i, part in enumerate(parts):
+                is_last = (i == len(parts) - 1)
                 
                 list_match = re.match(r"(\w+)\[(\d+)\]", part)
                 
@@ -194,51 +222,27 @@ class PipelineController:
                     idx = int(list_match.group(2))
                     
                     if key not in current:
-                        self.logger.warning(f"Key {key} not found")
+                        app_logger.warning(f"Key {key} not found")
                         return
                     if not isinstance(current[key], list) or idx >= len(current[key]):
-                        self.logger.warning(f"Invalid list access {part}")
+                        app_logger.warning(f"Invalid list access {part}")
                         return
                         
                     if is_last:
-                        current[key][idx] = value # This might be wrong if we target a property of the object at index
-                        # Wait, logic in original code was:
-                        # current = current[key][idx]
-                        # which meant it traversed INTO the object.
-                        # BUT if is_last is true, we want to SET the value?
-                        # Re-reading original code:
-                        # if is_last: current = current[key][idx] 
-                        # This implies the original code logic was flawed or I misunderstood.
-                        # Original:
-                        # if is_last: current = current[key][idx] else: current = current[key][idx]
-                        # Then loops ended.
-                        # Wait, original code:
-                        # if is_last: current[part] = value (in else block)
-                        
-                        # Let's stick to the structure that works for .image_url
-                        # parts: items[0], options[0], image_url
-                        # i=0 (options[0]): is_last=True.
-                        # list_match matches options[0].
-                        # current becomes option object.
-                        # Loop continues? No, is_last is checking if it's the second to last part.
-                        # len(parts)=3. parts[1:] = [options[0], image_url].
-                        # i=0: part=options[0]. len=3. len-2=1. i=0 != 1. is_last=False.
-                        # current = current['options'][0]
-                        # i=1: part=image_url. is_last=True.
-                        # else (dict access): is_last=True -> current['image_url'] = value.
-                        
-                        # My re-implementation of _update_item_at_path needs to match original logic exactly.
-                        current = current[key][idx]
+                        current[key][idx] = value
                     else:
                         current = current[key][idx]
                 else:
                     if is_last:
-                        current[part] = value
+                        if part in current:
+                            current[part] = value
+                        else:
+                            app_logger.warning(f"Key {part} not found (Strict Mode)")
                     else:
                         if part not in current:
-                            self.logger.warning(f"Key {part} not found")
+                            app_logger.warning(f"Key {part} not found")
                             return
                         current = current[part]
                         
         except Exception as e:
-            self.logger.error(f"Error updating path {path}: {e}")
+            app_logger.error(f"Error updating path {path}: {e}")

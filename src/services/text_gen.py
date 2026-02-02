@@ -76,6 +76,10 @@ class RealTextGenService:
             raise e
             
         # 4. 验证 Schema
+        # 注入练习类型到 content，确保符合 Schema 要求
+        if "content" in data and isinstance(data["content"], dict):
+            data["content"]["type"] = exercise_type
+            
         self.validator.validate(data, exercise_type)
         
         return data
@@ -148,8 +152,8 @@ class MockTextGenService:
                 "content": {
                     "question": "MOCK: Which image shows a cat?",
                     "options": [
-                        {"id": "opt1", "image_url": "https://placehold.co/200x200?text=Cat", "caption": "A cat"},
-                        {"id": "opt2", "image_url": "https://placehold.co/200x200?text=Dog", "caption": "A dog"}
+                        {"id": "opt1", "image_url": "", "caption": "A cat"},
+                        {"id": "opt2", "image_url": "", "caption": "A dog"}
                     ],
                     "hints": ["Meow"]
                 },
@@ -159,7 +163,20 @@ class MockTextGenService:
                 },
                 "generation": {
                     "grade_levels": ["1A"],
-                    "options_prompts": ["cute cat illustration", "cute dog illustration"]
+                    "asset_specs": [
+                        {
+                            "id": "opt1_img",
+                            "target_path": "content.options[0].image_url",
+                            "type": "image",
+                            "prompt": "cute cat illustration"
+                        },
+                        {
+                            "id": "opt2_img",
+                            "target_path": "content.options[1].image_url",
+                            "type": "image",
+                            "prompt": "cute dog illustration"
+                        }
+                    ]
                 }
             }
         elif exercise_type == "true_false":

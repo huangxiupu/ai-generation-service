@@ -26,6 +26,7 @@ class BaseGeneration(BaseModel):
 
 class BaseExerciseContent(BaseModel):
     """具有通用音频支持 (ESL) 的基础内容结构。"""
+    type: ExerciseType = Field(..., description="练习类型")
     instruction: Optional[str] = Field(None, description="给学生的指令文本")
     instruction_audio: Optional[str] = Field(None, description="指令文本的 TTS 音频 URL")
     question: Optional[str] = Field(None, description="主要问题文本")
