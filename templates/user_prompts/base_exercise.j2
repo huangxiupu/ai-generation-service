@@ -11,6 +11,11 @@ Visual Scene: {{ context.normalized_content.visual_scene }}
 Blocks:
 {{ context.normalized_content.blocks | tojson(indent=2) }}
 
+{% if reason %}
+### GENERATION INTENT / RECOMMENDATION REASON
+{{ reason }}
+{% endif %}
+
 ---
 
 ### TASK INSTRUCTION
@@ -44,7 +49,8 @@ You MUST provide 2 hints for every exercise to support ESL learners.
 If the exercise requires images or audio (e.g., for options, questions):
 1. Do NOT put prompts in `options_prompts` or `left_prompts`.
 2. You MUST generate `asset_specs` inside the `generation` object.
-3. `asset_specs` format:
+3. For audio assets, use `params` to specify 'voice_id' ONLY if you need a specific gender/role ('narrator', 'male', 'female'). Do NOT use specific voice names.
+4. `asset_specs` format:
    ```json
    "generation": {
      "asset_specs": [

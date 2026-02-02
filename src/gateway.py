@@ -33,11 +33,11 @@ class AIServiceGateway:
         """
         return self.image_service.generate(prompt, style)
         
-    def generate_audio(self, text: str, voice_id: str = "tongtong", speed: float = 1.0):
+    def generate_audio(self, text: str, voice_id: str = None, speed: float = 1.0, **kwargs):
         """
         生成音频 URL。
         """
-        return self.audio_service.generate(text, voice_id, speed)
+        return self.audio_service.generate(text, voice_id, speed, **kwargs)
 
     def preprocess_section(self, section_id: str):
         """

@@ -72,6 +72,11 @@ class AliyunProvider(AIProvider):
         try:
             # call 方法返回的是 bytes
             audio = synthesizer.call(text)
+            
+            if audio is None:
+                llm_logger.error(f"TTS Call Failed: synthesizer.call returned None for text: {text[:50]}")
+                raise Exception("阿里云 TTS SDK 返回空结果（可能是参数错误或服务不可用）")
+                
             llm_logger.info(f"TTS Response - Success, Audio Size: {len(audio)} bytes")
             return audio
         except Exception as e:

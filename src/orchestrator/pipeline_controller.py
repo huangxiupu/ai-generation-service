@@ -20,11 +20,14 @@ class PipelineController:
         self.image_service = image_service
         self.audio_service = audio_service
 
-    def generate_skeleton(self, context: StandardizedContext, exercise_type: str) -> ExerciseSkeleton:
+    def generate_skeleton(self, context: StandardizedContext, exercise_type: str, reason: Optional[str] = None) -> ExerciseSkeleton:
         """
         步骤 1: 生成文本骨架。
         """
         context_dict = context.model_dump()
+        if reason:
+            context_dict['reason'] = reason
+            
         app_logger.info(f"Generating text skeleton for type: {exercise_type}")
         generated_data = self.text_service.generate(context_dict, exercise_type)
         return self._parse_skeleton(generated_data, exercise_type)
@@ -59,11 +62,11 @@ class PipelineController:
         
         return skeleton
 
-    def generate_exercise(self, context: StandardizedContext, exercise_type: str) -> Dict[str, Any]:
+    def generate_exercise(self, context: StandardizedContext, exercise_type: str, reason: Optional[str] = None) -> Dict[str, Any]:
         """
         编排完整的生成流水线（旧版封装）。
         """
-        skeleton = self.generate_skeleton(context, exercise_type)
+        skeleton = self.generate_skeleton(context, exercise_type, reason=reason)
         self.hydrate_assets(skeleton)
         return skeleton.model_dump()
 

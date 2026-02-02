@@ -287,7 +287,7 @@ class TextShadowingContent(BaseExerciseContent):
 
 class TextShadowingGeneration(BaseGeneration):
     tts_text: Optional[str] = None
-    voice_id: Optional[str] = None
+    voice_id: Optional[str] = Field(None, description="Generic voice role ('narrator', 'male', 'female'). Provider-specific IDs are forbidden.")
 
 class TextShadowingExercise(BaseModel):
     content: TextShadowingContent
@@ -304,7 +304,7 @@ class ListeningComprehensionGrading(BaseGrading):
 
 class ListeningComprehensionGeneration(BaseGeneration):
     audio_script: str
-    voice_id: Optional[str] = None
+    voice_id: Optional[str] = Field(None, description="Generic voice role ('narrator', 'male', 'female'). Provider-specific IDs are forbidden.")
 
 class ListeningComprehensionExercise(BaseModel):
     content: ListeningComprehensionContent

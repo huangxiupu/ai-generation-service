@@ -20,8 +20,8 @@ providers:
     # 阿里云特有的音色映射
     voice_map:
       narrator: longxiaochun_v2
-      male: longxiaocheng
-      female: longxiaoxia
+      male: longxiaocheng_v2
+      female: longxiaoxia_v2
 
   siliconflow:
     type: openai

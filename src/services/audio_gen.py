@@ -7,12 +7,22 @@ class RealAudioGenService:
     def __init__(self):
         self.provider = ProviderFactory.get_provider(config.CHANNEL_AUDIO)
         
-    def generate(self, text: str, voice_id: str = "xiaochen", speed: float = 1.0) -> str:
+    def generate(self, text: str, voice_id: str = None, speed: float = 1.0, **kwargs) -> str:
         """
         使用配置的 TTS 提供商为给定文本生成音频。
         返回生成文件的本地路径/URL。
         """
         try:
+            # 如果没有提供 voice_id，尝试从 kwargs 中的 gender 推断
+            if voice_id is None:
+                gender = kwargs.get("gender")
+                if gender == "female":
+                    voice_id = "female"
+                elif gender == "male":
+                    voice_id = "male"
+                else:
+                    voice_id = "narrator"
+
             # 获取映射后的真实 Voice ID
             actual_voice_id = config.get_voice_id(voice_id, config.CHANNEL_AUDIO)
             
@@ -21,7 +31,8 @@ class RealAudioGenService:
                 text=text,
                 model=config.MODEL_AUDIO,
                 voice=actual_voice_id,
-                speed=speed
+                speed=speed,
+                **kwargs
             )
             
             # 生成唯一文件名
@@ -44,14 +55,23 @@ class RealAudioGenService:
             raise e
 
 class MockAudioGenService:
-    def generate(self, text: str, voice_id: str = "tongtong", speed: float = 1.0) -> str:
+    def generate(self, text: str, voice_id: str = None, speed: float = 1.0, **kwargs) -> str:
         """
         返回模拟的音频 URL。
         """
+        if voice_id is None:
+            gender = kwargs.get("gender")
+            if gender == "female":
+                voice_id = "female"
+            elif gender == "male":
+                voice_id = "male"
+            else:
+                voice_id = "narrator"
+
         voice_map = {
             "narrator": "tongtong",
-            "male_character": "chuichui",
-            "female_character": "xiaochen"
+            "male": "chuichui",
+            "female": "xiaochen"
         }
         
         actual_voice = voice_map.get(voice_id, voice_id)

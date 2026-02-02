@@ -139,6 +139,32 @@ def process_generation_task(section_id: str, types: List[str], count: int, batch
         
         print(f"[Generation] 上下文准备就绪，开始生成 {len(types)} 种类型的题目...")
         
+        # 1.5 获取推荐理由 (Reasons)
+        reasons_map = {}
+        try:
+            rec_resp = gateway.db.table("section_exercise_recommendations").select("recommended_types").eq("section_id", section_id).single().execute()
+            if rec_resp.data and rec_resp.data.get('recommended_types'):
+                rec_list = rec_resp.data['recommended_types']
+                if isinstance(rec_list, list):
+                    type_id_to_reason = {}
+                    type_ids = []
+                    for item in rec_list:
+                        if isinstance(item, dict) and 'type_id' in item:
+                            tid = item['type_id']
+                            type_ids.append(tid)
+                            type_id_to_reason[tid] = item.get('reason', '')
+                    
+                    if type_ids:
+                        types_info_resp = gateway.db.table("exercise_types").select("id", "code").in_("id", type_ids).execute()
+                        if types_info_resp.data:
+                            for t in types_info_resp.data:
+                                code = t['code']
+                                tid = t['id']
+                                if tid in type_id_to_reason:
+                                    reasons_map[code] = type_id_to_reason[tid]
+        except Exception as e:
+            print(f"[Generation] 获取推荐理由失败: {e}")
+
         # 2. 遍历每个类型
         for ex_type in types:
             try:
@@ -149,12 +175,13 @@ def process_generation_task(section_id: str, types: List[str], count: int, batch
                     continue
                 
                 type_id = type_resp.data['id']
+                reason = reasons_map.get(ex_type)
                 
                 # 3. 循环生成指定数量
                 for _ in range(count):
                     try:
                         # 步骤 1: 生成骨架
-                        skeleton = controller.generate_skeleton(context, ex_type)
+                        skeleton = controller.generate_skeleton(context, ex_type, reason=reason)
                         
                         # Extract difficulty
                         difficulty_val = skeleton.generation.get("difficulty", "Medium") if skeleton.generation else "Medium"
