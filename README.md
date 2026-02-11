@@ -44,13 +44,33 @@ AI Generation Service 是 EngPal 项目的核心后端服务，专门用于通�
 pip install -r requirements.txt
 ```
 
-### **2. 配置**
+### 2. 配置
 在 `src/ai_config.yaml` 或 `.env` 中配置你的 API 密钥和模型参数：
 - `CHANNEL_TEXT`: 文本模型通道 (openai/aliyun)
 - `MODEL_TEXT`: 使用的具体模型名称
-- `SUPABASE_URL` / `SUPABASE_KEY`: 数据库连接
+- `SUPABASE_URL`: Supabase 项目 URL
+- `SUPABASE_SERVICE_ROLE_KEY`: 后端服务专用密钥 (必须配置，用于绕过 RLS)
+- `SUPABASE_KEY`: 匿名密钥 (可选，仅用于测试受限访问)
 
-### **3. 启动服务**
+参见 `.env.example` 获取详细配置示例。
+
+## **安全配置**
+
+本项目遵循 [Supabase Postgres Best Practices](https://supabase.com/docs/guides/database/postgres/best-practices) 进行安全配置。
+
+### **1. 数据库行级安全 (RLS)**
+为了保护数据安全，我们强制开启了 Row Level Security (RLS)。
+- **默认策略**: 所有表的公共访问权限已被撤销，默认拒绝 `anon` 和 `authenticated` 角色的访问。
+- **后端访问**: 后端服务通过 `SUPABASE_SERVICE_ROLE_KEY` 访问数据库，该密钥拥有绕过 RLS 的权限。
+
+**初始化安全设置**:
+请在 Supabase SQL 编辑器中运行 `scripts/secure_db.sql` 脚本，以启用 RLS 并撤销公共权限。
+
+### **2. 密钥管理**
+- **Service Role Key**: 仅在后端服务中使用，**严禁**暴露给前端或提交到版本控制系统。
+- **Anon Key**: 如果需要，可用于受限的公共访问，但必须配合适当的 RLS 策略。
+
+### **3. 启动服务****
 ```bash
 python -m src.main
 ```
